@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,4 +5,72 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Participant {
+  id              Int      @id @default(autoincrement())
+  name            String   @unique
+  gender          String
+  medicaidId      String
+  dob             DateTime
+  location        String
+  community       String
+  address         String
+  primaryPhone    String
+  secondaryPhone  String
+  isActive        Boolean
+  locStartDate    DateTime
+  locEndDate      DateTime
+  pocStartDate    DateTime
+  pocEndDate      DateTime
+  units           Int
+  hours           Float
+  hdm             Boolean
+  adhc            Boolean
+  caregivers      ParticipantsOnCaregivers[]  
+  caseManager     CaseManager @relation(fields: [cmID], references: [id])
+  cmID            Int  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Caregiver {
+  id              Int      @id @default(autoincrement())
+  name            String   @unique
+  email           String?   // email, optional
+  phone           String?   // phone, optional
+  isActive        Boolean   // status, active/inactive
+  participants    ParticipantsOnCaregivers[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ParticipantsOnCaregivers {
+  participant     Participant @relation(fields: [participantId], references: [id])
+  participantId   Int
+  caregiver       Caregiver @relation(fields: [caregiverId], references: [id])
+  caregiverId     Int
+  assignedAt      DateTime @default(now())
+  assignedBy      String
+  @@id([participantId, caregiverId])
+}
+
+model Agency {
+  id              Int @id @default(autoincrement())
+  name            String    @unique //agency name
+  caseManagers    CaseManager[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CaseManager {
+  id              Int @id @default(autoincrement())
+  name            String   @unique
+  email           String?   // email, optional
+  phone           String?   // phone, optional
+  participants    Participant[]
+  agency          Agency @relation(fields: [agencyId], references: [id])
+  agencyId        Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
