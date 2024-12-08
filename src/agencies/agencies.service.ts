@@ -8,22 +8,25 @@ export class AgenciesService {
   constructor(private prisma: PrismaService) {}
 
   create(createAgencyDto: CreateAgencyDto) {
-    return 'This action adds a new agency';
+    return this.prisma.agency.create({data: createAgencyDto});
   }
 
   findAll() {
-    return `This action returns all agencies`;
+    return this.prisma.agency.findMany();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} agency`;
+    return this.prisma.agency.findUnique({ where: { id } });
   }
 
   update(id: number, updateAgencyDto: UpdateAgencyDto) {
-    return `This action updates a #${id} agency`;
+    return this.prisma.agency.update({
+      where: { id },
+      data: updateAgencyDto,
+    });
   }
 
   remove(id: number) {
-    return `This action removes a #${id} agency`;
+    return this.prisma.agency.delete({where: { id }});
   }
 }
