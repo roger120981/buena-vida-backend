@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+/* import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { CaseManagerEntity } from 'src/case-managers/entities/case-manager.entity';
 
@@ -37,5 +37,20 @@ export class CreateCaseManagerDto {
     agencyId: number;
 
     /*@ApiProperty()
-    agency: CaseManagerEntity;**/
-}
+    agency: CaseManagerEntity;*
+} */
+
+    import { IsString, IsEmail, IsOptional } from 'class-validator';
+
+    export class CreateCaseManagerDto {
+      @IsString() name: string;
+    
+      @IsEmail() @IsOptional()
+      email?: string;
+    
+      @IsString() @IsOptional()
+      phone?: string;
+    
+      @IsOptional() agencyId?: number;
+    }
+     

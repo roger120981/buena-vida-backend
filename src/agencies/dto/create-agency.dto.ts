@@ -9,14 +9,5 @@ export class CreateAgencyDto {
       @IsNotEmpty()
       @IsString()
     name: string;
-
-    /*@ApiProperty({
-        example: ['caseManager1', 'caseManager2'],
-        description: 'All the case managers belongs to agency',
-        required: false,
-      })
-      // @ArrayNotEmpty()
-    @IsString({ each: true })
-    caseManagers: string[];*/
-    
+  
 }

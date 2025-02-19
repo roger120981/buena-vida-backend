@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CaregiverController } from './caregiver.controller';
-import { CaregiverService } from './caregiver.service';
+import { CaregiverController } from './caregivers.controller';
+import { CaregiverService } from './caregivers.service';
 
 describe('CaregiverController', () => {
   let controller: CaregiverController;

@@ -1,32 +1,29 @@
 import { Injectable } from '@nestjs/common';
+import { CaseManagerRepository } from './repositories/case-manager.repository';
 import { CreateCaseManagerDto } from './dto/create-case-manager.dto';
 import { UpdateCaseManagerDto } from './dto/update-case-manager.dto';
-import { PrismaService } from 'src/prisma/prisma.service';;
 
 @Injectable()
 export class CaseManagersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly caseManagerRepository: CaseManagerRepository) {}
 
   create(createCaseManagerDto: CreateCaseManagerDto) {
-    return this.prisma.caseManager.create({data: createCaseManagerDto});
+    return this.caseManagerRepository.create(createCaseManagerDto);
   }
 
   findAll() {
-    return this.prisma.caseManager.findMany();
+    return this.caseManagerRepository.findAll();
   }
 
   findOne(id: number) {
-    return this.prisma.caseManager.findUnique({where: {id}});
+    return this.caseManagerRepository.findOne(id);
   }
 
   update(id: number, updateCaseManagerDto: UpdateCaseManagerDto) {
-    return this.prisma.caseManager.update({
-      where: { id },
-      data: updateCaseManagerDto,
-    });;
+    return this.caseManagerRepository.update(id, updateCaseManagerDto);
   }
 
   remove(id: number) {
-    return this.prisma.agency.delete({where: { id }});;
+    return this.caseManagerRepository.remove(id);
   }
 }

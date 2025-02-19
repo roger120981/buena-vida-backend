@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { CaseManagersService } from './case-managers.service';
 import { CreateCaseManagerDto } from './dto/create-case-manager.dto';
 import { UpdateCaseManagerDto } from './dto/update-case-manager.dto';
@@ -22,7 +22,7 @@ export class CaseManagersController {
     return this.caseManagersService.findOne(+id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(@Param('id') id: string, @Body() updateCaseManagerDto: UpdateCaseManagerDto) {
     return this.caseManagersService.update(+id, updateCaseManagerDto);
   }
