@@ -8,7 +8,7 @@ import { Caregiver } from '@prisma/client';
 export class CaregiverRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateCaregiverDto) {
+  async create(data: any): Promise<Caregiver> {
     // Validación con Zod antes de pasar los datos a Prisma
     const validation = CreateCaregiverSchema.safeParse(data);
     if (!validation.success) {

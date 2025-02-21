@@ -6,16 +6,16 @@ import { CreateCaseManagerDto, CreateCaseManagerSchema } from '../dto/create-cas
 export class CaseManagerRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateCaseManagerDto) {
+  async create(data: any) {
     // Validación con Zod
-    const validation = CreateCaseManagerSchema.safeParse(data);
+    /*const validation = CreateCaseManagerSchema.safeParse(data);
     if (!validation.success) {
       const validationErrors = validation.error.errors.map(e => e.message).join(', ');
       throw new Error(`Validation failed: ${validationErrors}`);
-    }
+    }*/
 
     try {
-      return await this.prisma.caseManager.create({ data: validation.data });
+      return await this.prisma.caseManager.create({ data: data });
     } catch (error) {
       console.error('Error details:', error);
       throw new Error(`Failed to create case manager: ${error.message}`);
