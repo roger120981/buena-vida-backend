@@ -1,14 +1,14 @@
-import { IsString, IsBoolean, IsOptional, IsEmail } from 'class-validator';
+import { z } from 'zod';
 
-export class CreateCaregiverDto {
-  @IsString() name: string;
+export const CreateCaregiverSchema = z.object({
+  name: z.string().min(2, 'Name must have at least 2 characters'),  // Campo obligatorio
+  email: z.string().email('Invalid email format').optional(),     // Campo opcional
+  phone: z.string().regex(/^\d{10}$/, 'Phone must be a valid 10-digit number').optional(),  // Campo opcional
+  address: z.string().min(5, 'Address must have at least 5 characters'),  // Campo obligatorio
+  isActive: z.boolean(), // Campo obligatorio
+});
+
+export type CreateCaregiverDto = z.infer<typeof CreateCaregiverSchema>;
+
   
-  @IsEmail() @IsOptional()
-  email?: string;
-
-  @IsString() @IsOptional()
-  phone?: string;
-
-  @IsBoolean() isActive: boolean;
-}
 

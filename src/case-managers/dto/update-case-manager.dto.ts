@@ -1,4 +1,5 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateCaseManagerDto } from './create-case-manager.dto';
+import { CreateCaseManagerSchema } from './create-case-manager.dto';
+import { z } from 'zod';
 
-export class UpdateCaseManagerDto extends PartialType(CreateCaseManagerDto) {}
+export const UpdateCaseManagerSchema = CreateCaseManagerSchema.partial();
+export type UpdateCaseManagerDto = z.infer<typeof UpdateCaseManagerSchema>;

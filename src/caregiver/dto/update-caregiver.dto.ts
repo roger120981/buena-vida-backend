@@ -1,4 +1,6 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateCaregiverDto } from './create-caregiver.dto';
+import { CreateCaregiverSchema } from './create-caregiver.dto';
+import { z } from 'zod';
 
-export class UpdateCaregiverDto extends PartialType(CreateCaregiverDto) {}
+export const UpdateCaregiverSchema = CreateCaregiverSchema.partial();
+export type UpdateCaregiverDto = z.infer<typeof UpdateCaregiverSchema>;
+

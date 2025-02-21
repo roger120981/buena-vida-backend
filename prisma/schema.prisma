@@ -53,6 +53,7 @@ model ParticipantsOnCaregivers {
   assignedAt      DateTime @default(now())
   assignedBy      String
   @@id([participantId, caregiverId])
+  @@map("participants_on_caregivers")
 }
 
 model Agency {

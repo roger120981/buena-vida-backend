@@ -1,56 +1,12 @@
-/* import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsNumber, IsString } from 'class-validator';
-import { CaseManagerEntity } from 'src/case-managers/entities/case-manager.entity';
+import { z } from 'zod';
 
-export class CreateCaseManagerDto {
-    @ApiProperty({
-        example: 'Aisha Brady',
-        description: 'Name of the Case Manager',
-      })
-    @IsNotEmpty()
-    @IsString()
-    name: string;
-    
-    @ApiProperty({
-        example: 'random@gmail.com',
-        description: 'Email of the Case Manager',
-      })
-    @IsNotEmpty()
-    @IsString()
-    @IsEmail()
-    email: string;
+export const CreateCaseManagerSchema = z.object({
+  name: z.string().min(2, 'Name must have at least 2 characters'), // Campo obligatorio
+  email: z.string().email('Invalid email format').optional(),     // Campo opcional
+  phone: z.string().regex(/^\d{10}$/, 'Phone must be a valid 10-digit number').optional(),  // Campo opcional
+  agencyId: z.number().int().positive('Agency ID must be a valid positive number'),  // Campo obligatorio
+});
 
-    @ApiProperty({
-        example: '502-345-9921',
-        description: 'Phone of the Case Manager',
-      })
-    @IsNotEmpty()
-    @IsString()
-    phone: string;
+export type CreateCaseManagerDto = z.infer<typeof CreateCaseManagerSchema>;
 
-    @ApiProperty({
-        example: '2',
-        description: 'ID of the CM Agency',
-      })
-    @IsNotEmpty()
-    @IsNumber()
-    agencyId: number;
-
-    /*@ApiProperty()
-    agency: CaseManagerEntity;*
-} */
-
-    import { IsString, IsEmail, IsOptional } from 'class-validator';
-
-    export class CreateCaseManagerDto {
-      @IsString() name: string;
-    
-      @IsEmail() @IsOptional()
-      email?: string;
-    
-      @IsString() @IsOptional()
-      phone?: string;
-    
-      @IsOptional() agencyId?: number;
-    }
      

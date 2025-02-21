@@ -1,29 +1,40 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCaseManagerDto } from '../dto/create-case-manager.dto';
-import { UpdateCaseManagerDto } from '../dto/update-case-manager.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateCaseManagerDto, CreateCaseManagerSchema } from '../dto/create-case-manager.dto';
 
 @Injectable()
 export class CaseManagerRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: CreateCaseManagerDto) {
-    return this.prisma.caseManager.create({ data });
+  async create(data: CreateCaseManagerDto) {
+    // Validación con Zod
+    const validation = CreateCaseManagerSchema.safeParse(data);
+    if (!validation.success) {
+      const validationErrors = validation.error.errors.map(e => e.message).join(', ');
+      throw new Error(`Validation failed: ${validationErrors}`);
+    }
+
+    try {
+      return await this.prisma.caseManager.create({ data: validation.data });
+    } catch (error) {
+      console.error('Error details:', error);
+      throw new Error(`Failed to create case manager: ${error.message}`);
+    }
   }
 
-  findAll() {
+  async findAll() {
     return this.prisma.caseManager.findMany();
   }
 
-  findOne(id: number) {
+  async findOne(id: number) {
     return this.prisma.caseManager.findUnique({ where: { id } });
   }
 
-  update(id: number, data: UpdateCaseManagerDto) {
+  async update(id: number, data: CreateCaseManagerDto) {
     return this.prisma.caseManager.update({ where: { id }, data });
   }
 
-  remove(id: number) {
+  async remove(id: number) {
     return this.prisma.caseManager.delete({ where: { id } });
   }
 }
