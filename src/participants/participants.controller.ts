@@ -1,16 +1,57 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, Query, NotFoundException } from '@nestjs/common';
+import { ApiTags, ApiQuery } from '@nestjs/swagger';
 import { ParticipantsService } from './participants.service';
 import { CreateParticipantDto, CreateParticipantSchema } from './dto/create-participant.dto';
 import { UpdateParticipantDto, UpdateParticipantSchema } from './dto/update-participant.dto';
 import { ValidationException } from '../common/exceptions/validation.exception';
 import { CaregiversService } from 'src/caregiver/caregivers.service';
 
+@ApiTags('Participants')
 @Controller('participants')
 export class ParticipantsController {
   constructor(private readonly participantsService: ParticipantsService, private readonly caregiversService: CaregiversService ) {}
 
   // Obtener todos los participantes con filtros, búsqueda, paginación y ordenamiento
   @Get()
+  @ApiQuery({
+    name: 'filters',
+    description: 'Filtros para la búsqueda, en formato JSON',
+    required: false,
+    type: String,
+    example: '{"isActive": true, "name": "John"}', // Ejemplo de cómo deben lucir los filtros
+  })
+  @ApiQuery({
+    name: 'page',
+    description: 'Número de página para la paginación',
+    required: false,
+    type: Number,
+    default: 1,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    description: 'Número de elementos por página',
+    required: false,
+    type: Number,
+    default: 10,
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    description: 'Campo por el cual ordenar los resultados',
+    required: false,
+    type: String,
+    default: 'createdAt',
+    example: 'name',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    description: 'Orden de los resultados, puede ser "asc" o "desc"',
+    required: false,
+    type: String,
+    default: 'asc',
+    example: 'desc',
+  })
   async findAll(
     @Query('filters') filters: string = '{}', // Parámetros de filtro como un JSON
     @Query('page') page: number = 1,         // Paginación: página
