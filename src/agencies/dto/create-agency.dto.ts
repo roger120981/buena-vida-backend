@@ -1,13 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { z } from 'zod';
 
-export class CreateAgencyDto {
-    @ApiProperty({
-        example: 'Caretenders',
-        description: 'Name of the CM Agency',
-      })
-      @IsNotEmpty()
-      @IsString()
-    name: string;
-  
-}
+export const CreateAgencySchema = z.object({
+  name: z.string().min(2, 'Agency name must have at least 2 characters'),
+});
+
+export type CreateAgencyDto = z.infer<typeof CreateAgencySchema>;

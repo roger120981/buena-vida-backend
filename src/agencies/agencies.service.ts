@@ -5,25 +5,30 @@ import { UpdateAgencyDto } from './dto/update-agency.dto';
 
 @Injectable()
 export class AgenciesService {
-  constructor(private readonly agencyRepository: AgencyRepository) {}
+  constructor(private readonly agenciesRepository: AgencyRepository) {}
 
-  create(createAgencyDto: CreateAgencyDto) {
-    return this.agencyRepository.create(createAgencyDto);
+  // Crear una nueva agencia
+  create(createAgenciesDto: CreateAgencyDto) {
+    return this.agenciesRepository.create(createAgenciesDto);
   }
 
+  // Obtener todas las agencias
   findAll() {
-    return this.agencyRepository.findAll();
+    return this.agenciesRepository.findAll();
   }
 
+  // Obtener una agencia por id
   findOne(id: number) {
-    return this.agencyRepository.findOne(id);
+    return this.agenciesRepository.findOne(id);
   }
 
-  update(id: number, updateAgencyDto: UpdateAgencyDto) {
-    return this.agencyRepository.update(id, updateAgencyDto);
+  // Actualizar una agencia
+  update(id: number, updateAgenciesDto: UpdateAgencyDto) {
+    return this.agenciesRepository.update(id, updateAgenciesDto);
   }
 
+  // Eliminar una agencia
   remove(id: number) {
-    return this.agencyRepository.remove(id);
+    return this.agenciesRepository.remove(id);
   }
 }

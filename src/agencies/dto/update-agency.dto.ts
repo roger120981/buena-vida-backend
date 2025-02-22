@@ -1,4 +1,7 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateAgencyDto } from './create-agency.dto';
+import { z } from 'zod';
 
-export class UpdateAgencyDto extends PartialType(CreateAgencyDto) {}
+export const UpdateAgencySchema = z.object({
+  name: z.string().min(2, 'Agency name must have at least 2 characters').optional(),
+});
+
+export type UpdateAgencyDto = z.infer<typeof UpdateAgencySchema>;

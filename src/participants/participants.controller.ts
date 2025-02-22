@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, Query, NotFoundException } from '@nestjs/common';
-import { ApiTags, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { ParticipantsService } from './participants.service';
-import { CreateParticipantDto, CreateParticipantSchema } from './dto/create-participant.dto';
+import { CreateParticipantDto, CreateParticipantOpenAPISchema, CreateParticipantSchema } from './dto/create-participant.dto';
 import { UpdateParticipantDto, UpdateParticipantSchema } from './dto/update-participant.dto';
 import { ValidationException } from '../common/exceptions/validation.exception';
 import { CaregiversService } from 'src/caregiver/caregivers.service';
@@ -81,6 +81,88 @@ export class ParticipantsController {
 
   // Crear un nuevo participante
   @Post()
+  @ApiBody({
+    description: 'Datos para crear un nuevo participante',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', minLength: 2 },
+        gender: { type: 'string', enum: ['Male', 'Female', 'Other'] },
+        medicaidId: { type: 'string', minLength: 10, maxLength: 10 },
+        dob: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        location: { type: 'string' },
+        community: { type: 'string' },
+        address: { type: 'string', minLength: 5 },
+        primaryPhone: { type: 'string', pattern: '^\\d{10}$' },
+        secondaryPhone: { type: 'string', nullable: true },
+        isActive: { type: 'boolean' },
+        locStartDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        locEndDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        pocStartDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        pocEndDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        units: { type: 'number', minimum: 1 },
+        hours: { type: 'number', minimum: 1 },
+        hdm: { type: 'boolean' },
+        adhc: { type: 'boolean' },
+        caseManager: {
+          type: 'object',
+          properties: {
+            create: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                email: { type: 'string', format: 'email' },
+                phone: { type: 'string' },
+                address: { type: 'string' },
+                agency: { type: 'string' },
+                isActive: { type: 'boolean' },
+              },
+              required: ['name', 'email', 'phone', 'address', 'agency'],
+            },
+            connectOrCreate: {
+              type: 'object',
+              properties: {
+                where: { type: 'object', properties: { name: { type: 'string' }, id: { type: 'number' } }, required: ['name'] },
+                create: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    email: { type: 'string', format: 'email' },
+                    phone: { type: 'string' },
+                    address: { type: 'string' },
+                    agency: { type: 'string' },
+                    isActive: { type: 'boolean' },
+                  },
+                  required: ['name', 'email', 'phone', 'address', 'agency'],
+                },
+              },
+              required: ['where', 'create'],
+            },
+            connect: { type: 'object', properties: { name: { type: 'string' }, id: { type: 'number' } }, required: ['name'] },
+          },
+        },
+      },
+      required: [
+        'name',
+        'gender',
+        'medicaidId',
+        'dob',
+        'location',
+        'community',
+        'address',
+        'primaryPhone',
+        'isActive',
+        'locStartDate',
+        'locEndDate',
+        'pocStartDate',
+        'pocEndDate',
+        'units',
+        'hours',
+        'hdm',
+        'adhc',
+      ],
+    },
+  })
   async create(@Body() createParticipantDto: CreateParticipantDto) {
     const parsed = CreateParticipantSchema.safeParse(createParticipantDto);
     if (!parsed.success) throw new ValidationException(parsed.error.format());

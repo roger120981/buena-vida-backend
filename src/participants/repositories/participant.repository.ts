@@ -2,17 +2,32 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FilterOptions, applyFilters } from '../../common/utils/pagination.filter.util'; // Usamos la función común
 import { Participant } from '@prisma/client';
+import { CreateParticipantDto, CreateParticipantSchema } from '../dto/create-participant.dto';
 
 @Injectable()
 export class ParticipantRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Crear un nuevo participante
-  async create(data: any) {
+   // Crear un nuevo participante
+  async create(data: CreateParticipantDto): Promise<Participant> {
+    const validation = CreateParticipantSchema.safeParse(data);
+    if (!validation.success) {
+      throw new Error(`Validation failed: ${validation.error.errors.map(e => e.message).join(', ')}`);
+    }
+
     try {
-      return await this.prisma.participant.create({ data });
+      return await this.prisma.participant.create({
+        data: {
+          ...validation.data,
+          caseManager: {
+            create: data.caseManager?.create,
+            connectOrCreate: data.caseManager?.connectOrCreate,
+            connect: data.caseManager?.connect,
+          },
+        },
+      });
     } catch (error) {
-      console.error('Error creating participant:', error);
+      console.error('Error details:', error);
       throw new Error(`Failed to create participant: ${error.message}`);
     }
   }
