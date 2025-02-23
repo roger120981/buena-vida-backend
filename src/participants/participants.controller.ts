@@ -280,13 +280,14 @@ async assignCaregiver(@Param('id') id: string, @Param('caregiverId') caregiverId
   }
 } */
 
-  import { Controller, Get, Post, Body, Param, Put, Delete, Query, NotFoundException } from '@nestjs/common';
+  import { Controller, Get, Post, Body, Param, Put, Delete, Query, NotFoundException, BadRequestException, ValidationPipe, UsePipes } from '@nestjs/common';
   import { ApiTags, ApiQuery, ApiBody } from '@nestjs/swagger';
   import { ParticipantsService } from './participants.service';
   import { CreateParticipantDto } from './dto/create-participant.dto';
   import { UpdateParticipantDto } from './dto/update-participant.dto';
   import { ValidationException } from '../common/exceptions/validation.exception';
   import { CaregiversService } from 'src/caregiver/caregivers.service';
+import { TransformStringPipe } from 'src/common/pipes/transform-string.pipe';
   
   @ApiTags('Participants')
   @Controller('participants')
@@ -366,8 +367,9 @@ async assignCaregiver(@Param('id') id: string, @Param('caregiverId') caregiverId
   
     // Crear un nuevo participante
     @Post()
+    @UsePipes(new ValidationPipe({ transform: true }))
     @ApiBody({
-      description: 'Datos para crear un nuevo participante',
+      description: 'Datos para crear un nuevo participante, incluyendo CaseManager y Agency',
       schema: {
         type: 'object',
         properties: {
@@ -398,10 +400,15 @@ async assignCaregiver(@Param('id') id: string, @Param('caregiverId') caregiverId
                   name: { type: 'string' },
                   email: { type: 'string', format: 'email' },
                   phone: { type: 'string' },
-                  agency: { type: 'string' },
                   isActive: { type: 'boolean' },
+                  agency: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string' },
+                    },
+                  },
                 },
-                required: ['name', 'email', 'phone', 'agency'],
+                required: ['name', 'email', 'phone', 'isActive', 'agency'],
               },
               connectOrCreate: {
                 type: 'object',
@@ -420,10 +427,15 @@ async assignCaregiver(@Param('id') id: string, @Param('caregiverId') caregiverId
                       name: { type: 'string' },
                       email: { type: 'string', format: 'email' },
                       phone: { type: 'string' },
-                      agency: { type: 'string' },
                       isActive: { type: 'boolean' },
+                      agency: {
+                        type: 'object',
+                        properties: {
+                          name: { type: 'string' },
+                        },
+                      },
                     },
-                    required: ['name', 'email', 'phone', 'agency'],
+                    required: ['name', 'email', 'phone', 'isActive', 'agency'],
                   },
                 },
                 required: ['where', 'create'],
@@ -431,10 +443,28 @@ async assignCaregiver(@Param('id') id: string, @Param('caregiverId') caregiverId
               connect: {
                 type: 'object',
                 properties: {
-                  name: { type: 'string' },
                   id: { type: 'number' },
                 },
+                required: ['id'],
+              },
+            },
+          },
+          agency: {
+            type: 'object',
+            properties: {
+              create: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                },
                 required: ['name'],
+              },
+              connect: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number' },
+                },
+                required: ['id'],
               },
             },
           },

@@ -18,18 +18,21 @@ export const CreateCaseManagerSchema = z.object({
 export type CreateCaseManagerDto = z.infer<typeof CreateCaseManagerSchema>;
  */
 
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsString, IsEmail, IsBoolean, IsOptional, IsInt, ValidateNested } from 'class-validator';
 import { ConnectAgencyDto, CreateAgencyDto } from 'src/agencies/dto/create-agency.dto';
 
 export class CreateCaseManagerDto {
   @IsString()
+  @Transform(({ value }) => value.toString())
   name: string;
 
   @IsString()
+  @Transform(({ value }) => value.toString())
   email: string;
 
   @IsString()
+  @Transform(({ value }) => value.toString())
   phone: string;
 
   @IsBoolean()
