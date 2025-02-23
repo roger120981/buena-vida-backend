@@ -1,4 +1,4 @@
-import { z } from 'zod';
+/* import { z } from 'zod';
 import { CreateCaseManagerSchema } from './create-case-manager.dto'; // Usamos el schema de creación para la base
 
 export const UpdateCaseManagerSchema = CreateCaseManagerSchema.extend({
@@ -14,3 +14,10 @@ export const UpdateCaseManagerSchema = CreateCaseManagerSchema.extend({
 });
 
 export type UpdateCaseManagerDto = z.infer<typeof UpdateCaseManagerSchema>;
+ */
+
+import { PartialType } from '@nestjs/swagger';
+import { CreateCaseManagerDto } from './create-case-manager.dto';
+
+// DTO de actualización utilizando PartialType
+export class UpdateCaseManagerDto extends PartialType(CreateCaseManagerDto) {}
