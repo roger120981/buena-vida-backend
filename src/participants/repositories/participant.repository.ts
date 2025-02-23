@@ -45,12 +45,36 @@ export class ParticipantRepository {
       throw new Error('Name is a required field for Participant creation');
     }
 
+    // Conversión de las fechas de string a Date
+  const formattedDob = new Date(dob);
+  const formattedLocStartDate = new Date(locStartDate);
+  const formattedLocEndDate = new Date(locEndDate);
+  const formattedPocStartDate = new Date(pocStartDate);
+  const formattedPocEndDate = new Date(pocEndDate);
+
+  // Validamos que las conversiones hayan sido exitosas
+  if (isNaN(formattedDob.getTime())) {
+    throw new Error('Invalid date format for dob');
+  }
+  if (isNaN(formattedLocStartDate.getTime())) {
+    throw new Error('Invalid date format for locStartDate');
+  }
+  if (isNaN(formattedLocEndDate.getTime())) {
+    throw new Error('Invalid date format for locEndDate');
+  }
+  if (isNaN(formattedPocStartDate.getTime())) {
+    throw new Error('Invalid date format for pocStartDate');
+  }
+  if (isNaN(formattedPocEndDate.getTime())) {
+    throw new Error('Invalid date format for pocEndDate');
+  }
+
     // Validamos que 'caseManager' esté presente si se está creando
     let caseManagerData: any = {};
 
     if (caseManager?.create) {
       // Si estamos creando un nuevo CaseManager, aseguramos que 'name' esté presente
-      const { name: cmName, email: cmEmail, phone: cmPhone, isActive: cmIsActive } = caseManager.create;
+      const { name: cmName, email: cmEmail, phone: cmPhone, isActive: cmIsActive, agency } = caseManager.create;
       if (!cmName) {
         throw new Error('CaseManager name is a required field for CaseManager creation');
       }
@@ -62,6 +86,7 @@ export class ParticipantRepository {
           email: cmEmail,
           phone: cmPhone,
           isActive: cmIsActive,
+          agency: agency,
         },
       };
     } else if (caseManager?.connect) {
@@ -85,16 +110,16 @@ export class ParticipantRepository {
           isActive,
           gender,
           medicaidId,
-          dob,
+          dob: formattedDob,
           location,
           community,
           address,
           primaryPhone,
           secondaryPhone,
-          locStartDate,
-          locEndDate,
-          pocStartDate,
-          pocEndDate,
+          locStartDate: formattedLocStartDate,
+          locEndDate: formattedLocEndDate,
+          pocStartDate: formattedPocStartDate,
+          pocEndDate: formattedPocEndDate,
           units,
           hours,
           hdm,

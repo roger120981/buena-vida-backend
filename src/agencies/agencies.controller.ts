@@ -2,13 +2,29 @@ import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common'
 import { AgenciesService } from './agencies.service';
 import { CreateAgencyDto } from './dto/create-agency.dto';
 import { UpdateAgencyDto } from './dto/update-agency.dto';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('agencies')
 @Controller('agencies')
 export class AgenciesController {
   constructor(private readonly agenciesService: AgenciesService) {}
 
   // Crear una nueva agencia
   @Post()
+  @ApiBody({
+    description: 'Datos para crear una nueva agencia',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { 
+          type: 'string', 
+          minLength: 2, 
+          description: 'Nombre de la agencia, debe tener al menos 2 caracteres'
+        },
+      },
+      required: ['name'], // El nombre es obligatorio al crear una nueva agencia
+    },
+  })  
   create(@Body() createAgenciesDto: CreateAgencyDto) {
     return this.agenciesService.create(createAgenciesDto);
   }
@@ -27,6 +43,27 @@ export class AgenciesController {
 
   // Actualizar una agencia
   @Put(':id')
+  @ApiOperation({ summary: 'Actualizar una agencia existente' })
+  @ApiBody({
+    description: 'Datos para actualizar una agencia',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { 
+          type: 'string', 
+          minLength: 2, 
+          description: 'Nombre de la agencia, debe tener al menos 2 caracteres' 
+        },
+      },
+      required: ['name'], // El nombre es obligatorio al actualizar una agencia
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'La agencia ha sido actualizada correctamente.',
+  })
+  @ApiResponse({ status: 400, description: 'Solicitud incorrecta' })
+  @ApiResponse({ status: 404, description: 'Agencia no encontrada' })
   update(@Param('id') id: number, @Body() updateAgenciesDto: UpdateAgencyDto) {
     return this.agenciesService.update(id, updateAgenciesDto);
   }

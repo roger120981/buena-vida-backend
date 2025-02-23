@@ -1,4 +1,4 @@
- import { z } from 'zod';
+import { z } from 'zod';
 
 export const CreateCaseManagerSchema = z.object({
   name: z.string().min(2, 'Name must have at least 2 characters'),
@@ -15,6 +15,3 @@ export const CreateCaseManagerSchema = z.object({
 });
 
 export type CreateCaseManagerDto = z.infer<typeof CreateCaseManagerSchema>;
-     
-
-

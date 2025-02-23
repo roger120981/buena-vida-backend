@@ -89,11 +89,11 @@ export class ParticipantsController {
         name: { type: 'string', minLength: 2 },
         gender: { type: 'string', enum: ['Male', 'Female', 'Other'] },
         medicaidId: { type: 'string', minLength: 10, maxLength: 10 },
-        dob: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        dob: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },  // Fecha en formato YYYY-MM-DD
         location: { type: 'string' },
         community: { type: 'string' },
         address: { type: 'string', minLength: 5 },
-        primaryPhone: { type: 'string', pattern: '^\\d{10}$' },
+        primaryPhone: { type: 'string', pattern: '^\\d{10}$' },  // 10 dígitos
         secondaryPhone: { type: 'string', nullable: true },
         isActive: { type: 'boolean' },
         locStartDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
@@ -113,32 +113,44 @@ export class ParticipantsController {
                 name: { type: 'string' },
                 email: { type: 'string', format: 'email' },
                 phone: { type: 'string' },
-                address: { type: 'string' },
                 agency: { type: 'string' },
                 isActive: { type: 'boolean' },
               },
-              required: ['name', 'email', 'phone', 'address', 'agency'],
+              required: ['name', 'email', 'phone', 'agency'],  // Campos obligatorios al crear un nuevo CaseManager
             },
             connectOrCreate: {
               type: 'object',
               properties: {
-                where: { type: 'object', properties: { name: { type: 'string' }, id: { type: 'number' } }, required: ['name'] },
+                where: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    id: { type: 'number' },
+                  },
+                  required: ['name'],  // 'name' es obligatorio en 'where'
+                },
                 create: {
                   type: 'object',
                   properties: {
                     name: { type: 'string' },
                     email: { type: 'string', format: 'email' },
                     phone: { type: 'string' },
-                    address: { type: 'string' },
                     agency: { type: 'string' },
                     isActive: { type: 'boolean' },
                   },
-                  required: ['name', 'email', 'phone', 'address', 'agency'],
+                  required: ['name', 'email', 'phone', 'agency'],  // Campos obligatorios al crear un nuevo CaseManager
                 },
               },
-              required: ['where', 'create'],
+              required: ['where', 'create'],  // 'where' y 'create' son necesarios
             },
-            connect: { type: 'object', properties: { name: { type: 'string' }, id: { type: 'number' } }, required: ['name'] },
+            connect: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                id: { type: 'number' },
+              },
+              required: ['name'],  // 'name' es obligatorio al conectar con un CaseManager
+            },
           },
         },
       },
@@ -160,7 +172,7 @@ export class ParticipantsController {
         'hours',
         'hdm',
         'adhc',
-      ],
+      ],  // Campos obligatorios para la creación de un participante
     },
   })
   async create(@Body() createParticipantDto: CreateParticipantDto) {

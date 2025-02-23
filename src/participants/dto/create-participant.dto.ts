@@ -22,17 +22,17 @@ export const CreateParticipantSchema = z.object({
   name: z.string().min(2, 'Name must have at least 2 characters'),
   gender: z.enum(['Male', 'Female', 'Other']),
   medicaidId: z.string().length(10, 'Medicaid ID must be exactly 10 characters'),
-  dob: z.date(),  // Cambiado a tipo Date
+  dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in the format YYYY-MM-DD'),  // Cambiado a string con patrón  // Cambiado a tipo Date
   location: z.string(),
   community: z.string(),
   address: z.string().min(5),
   primaryPhone: z.string().regex(/^\d{10}$/, 'Primary phone must be a valid 10-digit number'),
   secondaryPhone: z.string().optional(),
   isActive: z.boolean(),
-  locStartDate: z.date(),  // Cambiado a tipo Date
-  locEndDate: z.date(),    // Cambiado a tipo Date
-  pocStartDate: z.date(),  // Cambiado a tipo Date
-  pocEndDate: z.date(),    // Cambiado a tipo Date
+  locStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in the format YYYY-MM-DD'),  // Cambiado a string con patrón
+  locEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in the format YYYY-MM-DD'),    // Cambiado a string con patrón
+  pocStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in the format YYYY-MM-DD'),  // Cambiado a string con patrón
+  pocEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in the format YYYY-MM-DD'),    // Cambiado a string con patrón
   units: z.number().min(1),
   hours: z.number().min(1),
   hdm: z.boolean(),

@@ -26,21 +26,11 @@ export class CaseManagerRepository {
     }
 
     // Manejo de la relación con 'agency'
-    let agencyData: any = {};
-
-    if (agency?.create) {
-      agencyData = {
-        create: {
-          name: agency.create.name,  // Si estamos creando una nueva agencia
-        },
-      };
-    } else if (agency?.connect) {
-      agencyData = {
-        connect: {
-          id: agency.connect.id,  // Si estamos conectando con una agencia existente
-        },
-      };
-    }
+    const agencyData = agency?.create
+      ? { create: { name: agency.create.name } }
+      : agency?.connect
+      ? { connect: { id: agency.connect.id } }
+      : undefined;
 
     try {
       return await this.prisma.caseManager.create({
