@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCaseManagerDto, CreateCaseManagerSchema } from '../dto/create-case-manager.dto';
 import { UpdateCaseManagerDto, UpdateCaseManagerSchema } from '../dto/update-case-manager.dto';
+import { CaseManager } from '@prisma/client';
 
 @Injectable()
 export class CaseManagerRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateCaseManagerDto) {
+  // Crear un nuevo CaseManager
+  async create(data: CreateCaseManagerDto): Promise<CaseManager> {
     // Validación con Zod
     const validation = CreateCaseManagerSchema.safeParse(data);
     if (!validation.success) {
@@ -15,20 +17,27 @@ export class CaseManagerRepository {
       throw new Error(`Validation failed: ${validationErrors}`);
     }
 
-    const { agency, ...caseManagerData } = data;
+    // Desestructurar los datos de entrada
+    const { agency, name, email, phone } = data;
 
+    // Verificar que 'name' esté presente (campo obligatorio)
+    if (!name) {
+      throw new Error('Name is a required field for CaseManager creation');
+    }
+
+    // Manejo de la relación con 'agency'
     let agencyData: any = {};
 
     if (agency?.create) {
       agencyData = {
         create: {
-          name: agency.create.name,
+          name: agency.create.name,  // Si estamos creando una nueva agencia
         },
       };
     } else if (agency?.connect) {
       agencyData = {
         connect: {
-          id: agency.connect.id,
+          id: agency.connect.id,  // Si estamos conectando con una agencia existente
         },
       };
     }
@@ -36,12 +45,14 @@ export class CaseManagerRepository {
     try {
       return await this.prisma.caseManager.create({
         data: {
-          ...caseManagerData,
-          agency: agencyData, // Aquí pasamos la relación con la agencia
+          name,      // Pasamos el nombre de forma obligatoria
+          email,
+          phone,
+          agency: agencyData, // Relación con la agencia
         },
       });
     } catch (error) {
-      console.error('Error details:', error);
+      console.error('Error details:', error);  // Imprimir detalles del error
       throw new Error(`Failed to create case manager: ${error.message}`);
     }
   }

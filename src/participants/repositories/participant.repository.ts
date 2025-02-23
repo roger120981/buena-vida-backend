@@ -8,22 +8,98 @@ import { CreateParticipantDto, CreateParticipantSchema } from '../dto/create-par
 export class ParticipantRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-   // Crear un nuevo participante
+   // Crear un nuevo Participant
   async create(data: CreateParticipantDto): Promise<Participant> {
+    // Validación con Zod (verifica que los datos cumplen las reglas definidas)
     const validation = CreateParticipantSchema.safeParse(data);
     if (!validation.success) {
-      throw new Error(`Validation failed: ${validation.error.errors.map(e => e.message).join(', ')}`);
+      const validationErrors = validation.error.errors.map((e) => e.message).join(', ');
+      throw new Error(`Validation failed: ${validationErrors}`);
+    }
+
+    // Desestructuración de los datos y validación de campos obligatorios
+    const {
+      name,
+      isActive,
+      gender,
+      medicaidId,
+      dob,
+      location,
+      community,
+      address,
+      primaryPhone,
+      secondaryPhone,
+      locStartDate,
+      locEndDate,
+      pocStartDate,
+      pocEndDate,
+      units,
+      hours,
+      hdm,
+      adhc,
+      caseManager,
+    } = data;
+
+    // Validamos que 'name' sea obligatorio
+    if (!name) {
+      throw new Error('Name is a required field for Participant creation');
+    }
+
+    // Validamos que 'caseManager' esté presente si se está creando
+    let caseManagerData: any = {};
+
+    if (caseManager?.create) {
+      // Si estamos creando un nuevo CaseManager, aseguramos que 'name' esté presente
+      const { name: cmName, email: cmEmail, phone: cmPhone, isActive: cmIsActive } = caseManager.create;
+      if (!cmName) {
+        throw new Error('CaseManager name is a required field for CaseManager creation');
+      }
+
+      // Estructuramos los datos para crear un nuevo CaseManager
+      caseManagerData = {
+        create: {
+          name: cmName,
+          email: cmEmail,
+          phone: cmPhone,
+          isActive: cmIsActive,
+        },
+      };
+    } else if (caseManager?.connect) {
+      // Si estamos conectando con un CaseManager existente, aseguramos que 'id' esté presente
+      if (!caseManager.connect.id) {
+        throw new Error('CaseManager ID is required to connect with an existing CaseManager');
+      }
+      // Estructuramos los datos para conectar con un CaseManager existente
+      caseManagerData = {
+        connect: {
+          id: caseManager.connect.id,
+        },
+      };
     }
 
     try {
+      // Creamos el Participant con la relación con CaseManager
       return await this.prisma.participant.create({
         data: {
-          ...validation.data,
-          caseManager: {
-            create: data.caseManager?.create,
-            connectOrCreate: data.caseManager?.connectOrCreate,
-            connect: data.caseManager?.connect,
-          },
+          name, 
+          isActive,
+          gender,
+          medicaidId,
+          dob,
+          location,
+          community,
+          address,
+          primaryPhone,
+          secondaryPhone,
+          locStartDate,
+          locEndDate,
+          pocStartDate,
+          pocEndDate,
+          units,
+          hours,
+          hdm,
+          adhc,
+          caseManager: caseManagerData,  // Relación con CaseManager
         },
       });
     } catch (error) {

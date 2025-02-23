@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateCaregiverDto, CreateCaregiverSchema } from '../dto/create-caregiver.dto';
+import { CreateCaregiverDto } from '../dto/create-caregiver.dto';
 import { UpdateCaregiverDto } from '../dto/update-caregiver.dto';
 import { Caregiver } from '@prisma/client';
 
@@ -11,13 +11,21 @@ export class CaregiverRepository {
   // Crear un nuevo Caregiver
   async create(data: CreateCaregiverDto): Promise<Caregiver> {
     // Validación con Zod antes de pasar los datos a Prisma
-    const validation = CreateCaregiverSchema.safeParse(data);
-    if (!validation.success) {
-      throw new Error(`Validation failed: ${validation.error.errors.map(e => e.message).join(', ')}`);
+    const { name, email, phone, isActive } = data;
+    if (!name || !isActive) {
+      throw new Error('Name and isActive are required fields');
     }
 
     try {
-      return await this.prisma.caregiver.create({ data });
+      // Ahora pasamos un objeto con los campos requeridos para crear el caregiver
+      return await this.prisma.caregiver.create({
+        data: {
+          name,
+          email,
+          phone,
+          isActive,
+        },
+      });
     } catch (error) {
       console.error('Error details:', error);  // Imprimir detalles del error
       throw new Error(`Failed to create caregiver: ${error.message}`);
@@ -36,46 +44,19 @@ export class CaregiverRepository {
     }
   }
 
-  // Obtener todos los cuidadores
-  async findAll(): Promise<Caregiver[]> {
-    try {
-      return await this.prisma.caregiver.findMany();
-    } catch (error) {
-      console.error('Error fetching caregivers:', error);
-      throw new Error('An error occurred while retrieving caregivers');
-    }
+  async findAll() {
+    return this.prisma.caregiver.findMany();
   }
 
-  // Obtener un cuidador por id
-  async findOne(id: number): Promise<Caregiver | null> {
-    try {
-      return await this.prisma.caregiver.findUnique({ where: { id } });
-    } catch (error) {
-      console.error(`Error fetching caregiver with id ${id}:`, error);
-      throw new Error(`An error occurred while retrieving caregiver with id ${id}`);
-    }
+  async findOne(id: number) {
+    return this.prisma.caregiver.findUnique({ where: { id } });
   }
 
-  // Actualizar un Caregiver
-  async update(id: number, data: UpdateCaregiverDto): Promise<Caregiver> {
-    try {
-      return await this.prisma.caregiver.update({
-        where: { id },
-        data,
-      });
-    } catch (error) {
-      console.error(`Error updating caregiver with id ${id}:`, error);
-      throw new Error(`Failed to update caregiver with id ${id}: ${error.message}`);
-    }
+  async update(id: number, data: UpdateCaregiverDto) {
+    return this.prisma.caregiver.update({ where: { id }, data });
   }
 
-  // Eliminar un Caregiver
-  async remove(id: number): Promise<Caregiver> {
-    try {
-      return await this.prisma.caregiver.delete({ where: { id } });
-    } catch (error) {
-      console.error(`Error deleting caregiver with id ${id}:`, error);
-      throw new Error(`Failed to delete caregiver with id ${id}: ${error.message}`);
-    }
+  async remove(id: number) {
+    return this.prisma.caregiver.delete({ where: { id } });
   }
 }
