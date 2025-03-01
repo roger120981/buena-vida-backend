@@ -2,33 +2,40 @@ import { Injectable } from '@nestjs/common';
 import { AgencyRepository } from './repositories/agency.repository';
 import { CreateAgencyDto } from './dto/create-agency.dto';
 import { UpdateAgencyDto } from './dto/update-agency.dto';
+import { FilterOptions, PaginationOptions, SortOptions } from 'src/common/utils/pagination.filter.util';
+import { Agency } from '@prisma/client';
+import { NotFoundException } from 'src/common/exceptions/not-found.exception';
 
+/**
+ * Servicio para la lógica de negocio de agencias.
+ */
 @Injectable()
 export class AgenciesService {
-  constructor(private readonly agenciesRepository: AgencyRepository) {}
+  constructor(private readonly agencyRepository: AgencyRepository) {}
 
-  // Crear una nueva agencia
-  create(createAgenciesDto: CreateAgencyDto) {
-    return this.agenciesRepository.create(createAgenciesDto);
+  async create(createAgencyDto: CreateAgencyDto): Promise<Agency> {
+    return this.agencyRepository.create(createAgencyDto);
   }
 
-  // Obtener todas las agencias
-  findAll() {
-    return this.agenciesRepository.findAll();
+  async findAll(filters: FilterOptions, pagination: PaginationOptions, sort: SortOptions) {
+    return this.agencyRepository.findAll(filters, pagination, sort);
   }
 
-  // Obtener una agencia por id
-  findOne(id: number) {
-    return this.agenciesRepository.findOne(id);
+  async findOne(id: number): Promise<Agency> {
+    try {
+      return await this.agencyRepository.findOne(id);
+    } catch (error) {
+      throw new NotFoundException('Agency', id);
+    }
   }
 
-  // Actualizar una agencia
-  update(id: number, updateAgenciesDto: UpdateAgencyDto) {
-    return this.agenciesRepository.update(id, updateAgenciesDto);
+  async update(id: number, updateAgencyDto: UpdateAgencyDto): Promise<Agency> {
+    await this.findOne(id); // Verifica existencia
+    return this.agencyRepository.update(id, updateAgencyDto);
   }
 
-  // Eliminar una agencia
-  remove(id: number) {
-    return this.agenciesRepository.remove(id);
+  async remove(id: number): Promise<Agency> {
+    await this.findOne(id); // Verifica existencia
+    return this.agencyRepository.remove(id);
   }
 }

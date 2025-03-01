@@ -2,33 +2,40 @@ import { Injectable } from '@nestjs/common';
 import { CaseManagerRepository } from './repositories/case-manager.repository';
 import { CreateCaseManagerDto } from './dto/create-case-manager.dto';
 import { UpdateCaseManagerDto } from './dto/update-case-manager.dto';
+import { FilterOptions, PaginationOptions, SortOptions } from 'src/common/utils/pagination.filter.util';
+import { CaseManager } from '@prisma/client';
+import { NotFoundException } from 'src/common/exceptions/not-found.exception';
 
+/**
+ * Servicio para la lógica de negocio de administradores de casos.
+ */
 @Injectable()
 export class CaseManagersService {
   constructor(private readonly caseManagerRepository: CaseManagerRepository) {}
 
-  // Crear un nuevo CaseManager
-  create(createCaseManagerDto: CreateCaseManagerDto) {
+  async create(createCaseManagerDto: CreateCaseManagerDto): Promise<CaseManager> {
     return this.caseManagerRepository.create(createCaseManagerDto);
   }
 
-  // Obtener todos los CaseManagers
-  findAll() {
-    return this.caseManagerRepository.findAll();
+  async findAll(filters: FilterOptions, pagination: PaginationOptions, sort: SortOptions) {
+    return this.caseManagerRepository.findAll(filters, pagination, sort);
   }
 
-  // Obtener un CaseManager por ID
-  findOne(id: number) {
-    return this.caseManagerRepository.findOne(id);
+  async findOne(id: number): Promise<CaseManager> {
+    try {
+      return await this.caseManagerRepository.findOne(id);
+    } catch (error) {
+      throw new NotFoundException('CaseManager', id);
+    }
   }
 
-  // Actualizar un CaseManager por ID
-  update(id: number, updateCaseManagerDto: UpdateCaseManagerDto) {
+  async update(id: number, updateCaseManagerDto: UpdateCaseManagerDto): Promise<CaseManager> {
+    await this.findOne(id); // Verifica existencia
     return this.caseManagerRepository.update(id, updateCaseManagerDto);
   }
 
-  // Eliminar un CaseManager por ID
-  remove(id: number) {
+  async remove(id: number): Promise<CaseManager> {
+    await this.findOne(id); // Verifica existencia
     return this.caseManagerRepository.remove(id);
   }
 }

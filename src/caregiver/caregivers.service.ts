@@ -1,64 +1,49 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CaregiverRepository } from './repositories/caregiver.repository';
 import { CreateCaregiverDto } from './dto/create-caregiver.dto';
 import { UpdateCaregiverDto } from './dto/update-caregiver.dto';
+import { FilterOptions, PaginationOptions, SortOptions, PaginatedResult } from 'src/common/utils/pagination.filter.util';
 import { Caregiver } from '@prisma/client';
+import { NotFoundException } from './../common/exceptions/not-found.exception'; // Ajusta la ruta según tu estructura
 
 @Injectable()
 export class CaregiversService {
   constructor(private readonly caregiverRepository: CaregiverRepository) {}
 
-  // Crear un nuevo Caregiver
   async create(createCaregiverDto: CreateCaregiverDto): Promise<Caregiver> {
     return this.caregiverRepository.create(createCaregiverDto);
   }
 
-  // Obtener todos los Caregivers
-  async findAll(): Promise<Caregiver[]> {
-    return this.caregiverRepository.findAll();
+  async findAll(
+    filters: FilterOptions,
+    pagination: PaginationOptions,
+    sort: SortOptions,
+  ): Promise<PaginatedResult<Caregiver>> {
+    return this.caregiverRepository.findAll(filters, pagination, sort);
   }
 
-  // Buscar un Caregiver por ID
-  async findById(caregiverId: number): Promise<Caregiver> {
-    // Verificamos que el ID sea un número válido
-    if (isNaN(caregiverId)) {
-      throw new BadRequestException('The caregiverId must be a valid number');
+  async findOne(id: number): Promise<Caregiver> {
+    return this.findById(id); // Reutiliza findById
+  }
+
+  async findById(id: number): Promise<Caregiver> {
+    if (isNaN(id)) {
+      throw new Error('The caregiverId must be a valid number'); // Podrías usar una BadRequestException personalizada aquí si prefieres
     }
-
-    // Buscar al cuidador en la base de datos
-    const caregiver = await this.caregiverRepository.findById(caregiverId);
-
-    // Si el cuidador no existe, lanzamos una excepción
+    const caregiver = await this.caregiverRepository.findOne(id);
     if (!caregiver) {
-      throw new NotFoundException(`Caregiver with ID ${caregiverId} not found`);
+      throw new NotFoundException('Caregiver', id); // Usando NotFoundException personalizada
     }
-
     return caregiver;
   }
 
-  // Obtener un Caregiver por su ID
-  async findOne(id: number): Promise<Caregiver | null> {
-    return this.caregiverRepository.findOne(id);
-  }
-
-  // Actualizar un Caregiver
   async update(id: number, updateCaregiverDto: UpdateCaregiverDto): Promise<Caregiver> {
-    // Verificamos que el ID sea válido antes de actualizar
-    const caregiver = await this.findById(id); // Aquí reutilizamos la validación
-    if (!caregiver) {
-      throw new NotFoundException(`Caregiver with ID ${id} not found`);
-    }
-
+    await this.findById(id); // Verifica existencia, lanzará NotFoundException si no existe
     return this.caregiverRepository.update(id, updateCaregiverDto);
   }
 
-  // Eliminar un Caregiver
   async remove(id: number): Promise<Caregiver> {
-    const caregiver = await this.findById(id); // Verificamos que exista el Caregiver
-    if (!caregiver) {
-      throw new NotFoundException(`Caregiver with ID ${id} not found`);
-    }
-
+    await this.findById(id); // Verifica existencia, lanzará NotFoundException si no existe
     return this.caregiverRepository.remove(id);
   }
 }

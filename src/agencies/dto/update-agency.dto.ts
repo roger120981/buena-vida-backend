@@ -1,7 +1,10 @@
 import { IsString, IsOptional } from 'class-validator';
 
+/**
+ * DTO para actualizar una agencia existente.
+ */
 export class UpdateAgencyDto {
+  @IsString({ message: 'Name must be a string' })
   @IsOptional()
-  @IsString()
-  name?: string;  // El nombre de la agencia (opcional para actualizar parcialmente)
+  name?: string;
 }

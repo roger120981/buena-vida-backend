@@ -1,268 +1,178 @@
-  import { Controller, Get, Post, Body, Param, Put, Delete, Query, NotFoundException, BadRequestException, ValidationPipe, UsePipes } from '@nestjs/common';
-  import { ApiTags, ApiQuery, ApiBody } from '@nestjs/swagger';
-  import { ParticipantsService } from './participants.service';
-  import { CreateParticipantDto } from './dto/create-participant.dto';
-  import { UpdateParticipantDto } from './dto/update-participant.dto';
-  import { ValidationException } from '../common/exceptions/validation.exception';
-  import { CaregiversService } from 'src/caregiver/caregivers.service';
-import { TransformStringPipe } from 'src/common/pipes/transform-string.pipe';
-  
-  @ApiTags('Participants')
-  @Controller('participants')
-  export class ParticipantsController {
-    constructor(
-      private readonly participantsService: ParticipantsService,
-      private readonly caregiversService: CaregiversService,
-    ) {}
-  
-    // Obtener todos los participantes con filtros, búsqueda, paginación y ordenamiento
-    @Get()
-    @ApiQuery({
-      name: 'filters',
-      description: 'Filtros para la búsqueda, en formato JSON',
-      required: false,
-      type: String,
-      example: '{"isActive": true, "name": "John"}', // Ejemplo de cómo deben lucir los filtros
-    })
-    @ApiQuery({
-      name: 'page',
-      description: 'Número de página para la paginación',
-      required: false,
-      type: Number,
-      default: 1,
-      example: 1,
-    })
-    @ApiQuery({
-      name: 'pageSize',
-      description: 'Número de elementos por página',
-      required: false,
-      type: Number,
-      default: 10,
-      example: 10,
-    })
-    @ApiQuery({
-      name: 'sortBy',
-      description: 'Campo por el cual ordenar los resultados',
-      required: false,
-      type: String,
-      default: 'createdAt',
-      example: 'name',
-    })
-    @ApiQuery({
-      name: 'sortOrder',
-      description: 'Orden de los resultados, puede ser "asc" o "desc"',
-      required: false,
-      type: String,
-      default: 'asc',
-      example: 'desc',
-    })
-    async findAll(
-      @Query('filters') filters: string = '{}',
-      @Query('page') page: number = 1,
-      @Query('pageSize') pageSize: number = 10,
-      @Query('sortBy') sortBy: string = 'createdAt',
-      @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
-    ) {
-      const parsedFilters = JSON.parse(filters);
-      return this.participantsService.findAll(
-        parsedFilters,
-        page,
-        pageSize,
-        sortBy,
-        sortOrder,
-      );
-    }
-  
-    // Obtener un participante por ID
-    @Get(':id')
-    async findOne(@Param('id') id: string) {
-      const participant = await this.participantsService.findOne(Number(id));
-      if (!participant) {
-        throw new NotFoundException(`Participant with ID ${id} not found`);
-      }
-      return participant;
-    }
-  
-    // Crear un nuevo participante
-    @Post()
-    @UsePipes(new ValidationPipe({ transform: true }))
-    @ApiBody({
-      description: 'Datos para crear un nuevo participante, incluyendo CaseManager y Agency',
-      schema: {
-        type: 'object',
-        properties: {
-          name: { type: 'string', minLength: 2 },
-          gender: { type: 'string', enum: ['Male', 'Female', 'Other'] },
-          medicaidId: { type: 'string', minLength: 10, maxLength: 10 },
-          dob: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-          location: { type: 'string' },
-          community: { type: 'string' },
-          address: { type: 'string', minLength: 5 },
-          primaryPhone: { type: 'string', pattern: '^\\d{10}$' },
-          secondaryPhone: { type: 'string', nullable: true },
-          isActive: { type: 'boolean' },
-          locStartDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-          locEndDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-          pocStartDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-          pocEndDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-          units: { type: 'number', minimum: 1 },
-          hours: { type: 'number', minimum: 1 },
-          hdm: { type: 'boolean' },
-          adhc: { type: 'boolean' },
-          caseManager: {
-            type: 'object',
-            properties: {
-              create: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  email: { type: 'string', format: 'email' },
-                  phone: { type: 'string' },
-                  isActive: { type: 'boolean' },
-                  agency: {
-                    type: 'object',
-                    properties: {
-                      name: { type: 'string' },
-                    },
-                  },
-                },
-                required: ['name', 'email', 'phone', 'isActive', 'agency'],
-              },
-              connectOrCreate: {
-                type: 'object',
-                properties: {
-                  where: {
-                    type: 'object',
-                    properties: {
-                      name: { type: 'string' },
-                      id: { type: 'number' },
-                    },
-                    required: ['name'],
-                  },
-                  create: {
-                    type: 'object',
-                    properties: {
-                      name: { type: 'string' },
-                      email: { type: 'string', format: 'email' },
-                      phone: { type: 'string' },
-                      isActive: { type: 'boolean' },
-                      agency: {
-                        type: 'object',
-                        properties: {
-                          name: { type: 'string' },
-                        },
-                      },
-                    },
-                    required: ['name', 'email', 'phone', 'isActive', 'agency'],
-                  },
-                },
-                required: ['where', 'create'],
-              },
-              connect: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                },
-                required: ['id'],
-              },
-            },
-          },
-          agency: {
-            type: 'object',
-            properties: {
-              create: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                },
-                required: ['name'],
-              },
-              connect: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                },
-                required: ['id'],
-              },
-            },
-          },
-        },
-        required: [
-          'name',
-          'gender',
-          'medicaidId',
-          'dob',
-          'location',
-          'community',
-          'address',
-          'primaryPhone',
-          'isActive',
-          'locStartDate',
-          'locEndDate',
-          'pocStartDate',
-          'pocEndDate',
-          'units',
-          'hours',
-          'hdm',
-          'adhc',
-        ],
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe, ValidationPipe, UsePipes, BadRequestException, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { ParticipantsService } from './participants.service';
+import { CaregiversService } from 'src/caregiver/caregivers.service';
+import { CreateParticipantDto } from './dto/create-participant.dto';
+import { UpdateParticipantDto } from './dto/update-participant.dto';
+import { FilterOptions, PaginationOptions, SortOptions, PaginatedResult } from 'src/common/utils/pagination.filter.util';
+import { Participant } from '@prisma/client';
+import { PaginatedParticipantResponseDto } from './dto/paginated-participant-response.dto';
+import { NotFoundException as CustomNotFoundException } from './../common/exceptions/not-found.exception'; // Asegúrate de importar la versión personalizada
+
+
+@ApiTags('Participants')
+@Controller('participants')
+export class ParticipantsController {
+  constructor(
+    private readonly participantsService: ParticipantsService,
+    private readonly caregiversService: CaregiversService,
+  ) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Obtener todos los participantes con filtros y paginación' })
+  @ApiQuery({
+    name: 'filters',
+    required: false,
+    type: String,
+    description: 'Filtros dinámicos en formato JSON para buscar participantes',
+    examples: {
+      byActive: { value: '{"isActive": true}', summary: 'Filtrar por participantes activos' },
+      byName: { value: '{"name": {"contains": "John", "mode": "insensitive"}}', summary: 'Filtrar por nombre parcial' },
+      byGender: { value: '{"gender": "M"}', summary: 'Filtrar por género' },
+      byMedicaid: { value: '{"medicaidId": {"contains": "123"}}', summary: 'Filtrar por ID de Medicaid parcial' },
+      byDateRange: { 
+        value: '{"locStartDate": "2023-01-01", "locEndDate": "2023-12-31"}', 
+        summary: 'Filtrar por rango de fechas de ubicación' 
       },
-    })
-    async create(@Body() createParticipantDto: CreateParticipantDto) {
-      return this.participantsService.create(createParticipantDto);
+      byMultiple: { 
+        value: '{"isActive": true, "cmID": 1, "units": {"gte": 5}}', 
+        summary: 'Filtrar por estado, administrador de casos y unidades mínimas' 
+      },
+      empty: { value: '{}', summary: 'Sin filtros (todos los participantes)' },
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Número de página para paginación',
+    examples: {
+      firstPage: { value: 1, summary: 'Primera página' },
+      secondPage: { value: 2, summary: 'Segunda página' },
+      fifthPage: { value: 5, summary: 'Quinta página' },
+    },
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    description: 'Cantidad de registros por página',
+    examples: {
+      small: { value: 5, summary: '5 registros por página' },
+      default: { value: 10, summary: '10 registros por página (predeterminado)' },
+      large: { value: 25, summary: '25 registros por página' },
+    },
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+    description: 'Campo por el cual ordenar los resultados',
+    examples: {
+      byCreatedAt: { value: 'createdAt', summary: 'Ordenar por fecha de creación' },
+      byName: { value: 'name', summary: 'Ordenar por nombre' },
+      byMedicaidId: { value: 'medicaidId', summary: 'Ordenar por ID de Medicaid' },
+      byUnits: { value: 'units', summary: 'Ordenar por unidades' },
+      byCmID: { value: 'cmID', summary: 'Ordenar por ID del administrador de casos' },
+    },
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['asc', 'desc'],
+    description: 'Dirección del ordenamiento',
+    examples: {
+      ascending: { value: 'asc', summary: 'Orden ascendente' },
+      descending: { value: 'desc', summary: 'Orden descendente' },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista paginada de participantes',
+    type: PaginatedParticipantResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Formato de filtros inválido' })
+  async findAll(
+    @Query('filters') filters: string = '{}',
+    @Query('page', ParseIntPipe) page: number = 1,
+    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+    @Query('sortBy') sortBy: string = 'createdAt',
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
+  ): Promise<PaginatedResult<Participant>> {
+    let parsedFilters: FilterOptions;
+    try {
+      parsedFilters = JSON.parse(filters);
+    } catch (error) {
+      throw new BadRequestException('Invalid filters format. Must be valid JSON.');
     }
+
+    const pagination: PaginationOptions = { page, pageSize };
+    const sort: SortOptions = { sortBy, sortOrder };
+
+    return this.participantsService.findAll(parsedFilters, pagination, sort);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener un participante por ID' })
+  @ApiResponse({ status: 200, description: 'Participante encontrado' })
+  @ApiResponse({ status: 404, description: 'Participante no encontrado' })
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Participant> {
+    return this.participantsService.findOne(id);
+  }
+
+  @Post()
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @ApiOperation({ summary: 'Crear un nuevo participante' })
+  @ApiBody({ type: CreateParticipantDto })
+  @ApiResponse({ status: 201, description: 'Participante creado' })
+  async create(@Body() createParticipantDto: CreateParticipantDto): Promise<Participant> {
+    return this.participantsService.create(createParticipantDto);
+  }
+
+  @Put(':id')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @ApiOperation({ summary: 'Actualizar un participante' })
+  @ApiBody({ type: UpdateParticipantDto })
+  @ApiResponse({ status: 200, description: 'Participante actualizado' })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateParticipantDto: UpdateParticipantDto,
+  ): Promise<Participant> {
+    return this.participantsService.update(id, updateParticipantDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Desactivar un participante (soft delete)' })
+  @ApiResponse({ status: 200, description: 'Participante desactivado' })
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    await this.participantsService.remove(id);
+    return { success: true, message: 'Participant deactivated successfully' };
+  }
+
+  @Get(':id/caregivers')
+  @ApiOperation({ summary: 'Obtener los cuidadores asignados a un participante' })
+  @ApiResponse({ status: 200, description: 'Lista de cuidadores' })
+  @ApiResponse({ status: 404, description: 'Participante no encontrado' })
+  async findCaregivers(@Param('id', ParseIntPipe) id: number) {
+    return this.participantsService.findCaregivers(id);
+  }
+
+  @Post(':id/caregivers/:caregiverId')
+  @ApiOperation({ summary: 'Asignar un cuidador a un participante' })
+  @ApiResponse({ status: 200, description: 'Cuidador asignado exitosamente' })
+  @ApiResponse({ status: 404, description: 'Participante o cuidador no encontrado' })
+  async assignCaregiver(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('caregiverId', ParseIntPipe) caregiverId: number,
+  ) {
+    const participantId = id;
+    const caregiverIdNum = caregiverId;
+    const assignedBy = 'admin';
   
-    // Actualizar un participante por ID
-    @Put(':id')
-    async update(@Param('id') id: string, @Body() updateParticipantDto: UpdateParticipantDto) {
-      const participant = await this.participantsService.findOne(Number(id));
-      if (!participant) {
-        throw new NotFoundException(`Participant with ID ${id} not found`);
-      }
-      return this.participantsService.update(Number(id), updateParticipantDto);
-    }
-  
-    // Eliminar un participante por ID (Soft Delete)
-    @Delete(':id')
-    async remove(@Param('id') id: string) {
-      const deleted = await this.participantsService.remove(Number(id));
-      if (!deleted) {
-        throw new NotFoundException(`Participant with ID ${id} not found`);
-      }
-      return { success: true, message: 'Participant deleted successfully' };
-    }
-  
-    // Obtener los cuidadores asignados a un participante
-    @Get(':id/caregivers')
-    async findCaregivers(@Param('id') id: string) {
-      const caregivers = await this.participantsService.findCaregivers(Number(id));
-      if (!caregivers) {
-        throw new NotFoundException(`No caregivers found for participant with ID ${id}`);
-      }
-      return caregivers;
-    }
-  
-    // Asignar un cuidador a un participante
-    @Post(':id/caregivers/:caregiverId')
-    async assignCaregiver(@Param('id') id: string, @Param('caregiverId') caregiverId: string) {
-      const participantId = Number(id);
-      const caregiverIdNum = Number(caregiverId);
-      const asignedBy = 'admin'; // Cambiar por el usuario autenticado
-  
-      const participantExists = await this.participantsService.findById(participantId);
-      if (!participantExists) {
-        throw new NotFoundException(`Participant with ID ${participantId} not found`);
-      }
-  
-      const caregiverExists = await this.caregiversService.findById(caregiverIdNum);
-      if (!caregiverExists) {
-        throw new NotFoundException(`Caregiver with ID ${caregiverIdNum} not found`);
-      }
-  
-      const assigned = await this.participantsService.assignCaregiver(participantId, caregiverIdNum, asignedBy);
-      if (!assigned) {
-        throw new NotFoundException(`Could not assign caregiver with ID ${caregiverId} to participant with ID ${id}`);
-      }
+    try {
+      await this.participantsService.findById(participantId);
+      await this.caregiversService.findById(caregiverIdNum);
+      await this.participantsService.assignCaregiver(participantId, caregiverIdNum, assignedBy);
   
       return {
         success: true,
@@ -270,36 +180,79 @@ import { TransformStringPipe } from 'src/common/pipes/transform-string.pipe';
         participantId,
         caregiverId: caregiverIdNum,
       };
-    }
-  
-    // Desvincular un cuidador de un participante
-    @Delete(':id/caregivers/:caregiverId')
-    async unassignCaregiver(@Param('id') id: string, @Param('caregiverId') caregiverId: string) {
-      const unassigned = await this.participantsService.unassignCaregiver(Number(id), Number(caregiverId));
-      if (!unassigned) {
-        throw new NotFoundException(`Could not unassign caregiver with ID ${caregiverId} from participant with ID ${id}`);
+    } catch (error) {
+      if (error instanceof CustomNotFoundException) {
+        throw error; // Usa la versión personalizada explícitamente
       }
-      return { success: true, message: 'Caregiver unassigned successfully' };
-    }
-  
-    // Buscar participantes por estatus (activo/inactivo)
-    @Get('status/:isActive')
-    async findByStatus(@Param('isActive') isActive: string) {
-      const participants = await this.participantsService.findByStatus(isActive === 'true');
-      if (!participants.length) {
-        throw new NotFoundException('No participants found with this status');
-      }
-      return participants;
-    }
-  
-    // Buscar participantes por rango de fechas
-    @Get('date-range')
-    async findByDateRange(@Query('startDate') startDate: string, @Query('endDate') endDate: string) {
-      const participants = await this.participantsService.findByDateRange(startDate, endDate);
-      if (!participants.length) {
-        throw new NotFoundException('No participants found for the given date range');
-      }
-      return participants;
+      throw new BadRequestException('Failed to assign caregiver due to an unexpected error');
     }
   }
-  
+
+@Delete(':id/caregivers/:caregiverId')
+@ApiOperation({ summary: 'Desvincular un cuidador de un participante' })
+@ApiResponse({ status: 200, description: 'Cuidador desvinculado exitosamente' })
+@ApiResponse({ status: 404, description: 'Relación no encontrada' })
+async unassignCaregiver(
+  @Param('id', ParseIntPipe) id: number,
+  @Param('caregiverId', ParseIntPipe) caregiverId: number,
+) {
+  try {
+    await this.participantsService.unassignCaregiver(id, caregiverId);
+    return { success: true, message: 'Caregiver unassigned successfully' };
+  } catch (error) {
+    if (error.code === 'P2025') { // Código de Prisma para "Record not found"
+      throw new CustomNotFoundException('ParticipantsOnCaregivers', `${id}-${caregiverId}`, 'RELATION_NOT_FOUND');
+    }
+    throw new BadRequestException('Failed to unassign caregiver due to an unexpected error');
+  }
+}
+
+  @Get('status/:isActive')
+  @ApiOperation({ summary: 'Obtener participantes por estado (activo/inactivo)' })
+  @ApiResponse({ status: 200, description: 'Lista de participantes' })
+  @ApiResponse({ status: 404, description: 'No se encontraron participantes' })
+  async findByStatus(@Param('isActive', ParseIntPipe) isActive: number) {
+    const participants = await this.participantsService.findByStatus(isActive === 1);
+    if (!participants.length) {
+      throw new CustomNotFoundException('Participants', 'status', 'NO_PARTICIPANTS_FOUND_WITH_STATUS'); // Usamos la versión personalizada
+    }
+    return participants;
+  }
+
+  @Get('date-range/:startDate/:endDate')
+  @ApiOperation({ summary: 'Obtener participantes por rango de fechas' })
+  @ApiParam({ name: 'startDate', required: true, type: String, description: 'Fecha de inicio (YYYY-MM-DD)', example: '2023-01-01' })
+  @ApiParam({ name: 'endDate', required: true, type: String, description: 'Fecha de fin (YYYY-MM-DD)', example: '2023-12-31' })
+  @ApiResponse({ status: 200, description: 'Lista de participantes' })
+  @ApiResponse({ status: 400, description: 'Parámetros inválidos' })
+  @ApiResponse({ status: 404, description: 'No se encontraron participantes' })
+  async findByDateRange(
+    @Param('startDate') startDate: string,
+    @Param('endDate') endDate: string,
+  ) {
+    // Validación manual
+    if (!startDate || !endDate) {
+      throw new BadRequestException('startDate and endDate are required');
+    }
+
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+      throw new BadRequestException('startDate and endDate must be in YYYY-MM-DD format');
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new BadRequestException('startDate or endDate is not a valid date');
+    }
+    if (start > end) {
+      throw new BadRequestException('startDate must be earlier than endDate');
+    }
+
+    const participants = await this.participantsService.findByDateRange(startDate, endDate);
+    if (!participants.length) {
+      throw new CustomNotFoundException('Participants', 'date-range', 'NO_PARTICIPANTS_FOUND_IN_DATE_RANGE');
+    }
+    return participants;
+  }
+}

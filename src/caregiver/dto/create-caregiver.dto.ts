@@ -1,17 +1,21 @@
-import { IsString, IsOptional, IsBoolean, IsEmail } from 'class-validator';
+import { IsString, IsBoolean, IsOptional } from 'class-validator';
 
+/**
+ * DTO para crear un nuevo cuidador.
+ */
 export class CreateCaregiverDto {
-  @IsString()
-  name: string; // Nombre del cuidador (obligatorio)
+  @IsString({ message: 'Name must be a string' })
+  name: string;
 
+  @IsString({ message: 'Email must be a string' })
   @IsOptional()
-  @IsEmail()
-  email?: string; // Correo electrónico (opcional)
+  email?: string;
 
+  @IsString({ message: 'Phone must be a string' })
   @IsOptional()
-  @IsString()
-  phone?: string; // Teléfono (opcional)
+  phone?: string;
 
-  @IsBoolean()
-  isActive: boolean; // Estado del cuidador (activo o no activo)
+  @IsBoolean({ message: 'IsActive must be a boolean' })
+  @IsOptional()
+  isActive?: boolean;
 }

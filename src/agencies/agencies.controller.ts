@@ -1,104 +1,132 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe, ValidationPipe, UsePipes, BadRequestException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { AgenciesService } from './agencies.service';
 import { CreateAgencyDto } from './dto/create-agency.dto';
 import { UpdateAgencyDto } from './dto/update-agency.dto';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { FilterOptions, PaginatedResult, PaginationOptions, SortOptions } from 'src/common/utils/pagination.filter.util';
+import { PaginatedAgencyResponseDto } from './dto/paginated-agency-response.dto';
+import { Agency } from '@prisma/client';
 
+/**
+ * Controlador para manejar operaciones CRUD de agencias.
+ */
 @ApiTags('Agencies')
 @Controller('agencies')
 export class AgenciesController {
   constructor(private readonly agenciesService: AgenciesService) {}
 
-  // Crear una nueva agencia
-  @Post()
-  @ApiBody({
-    description: 'Datos para crear una nueva agencia',
-    schema: {
-      type: 'object',
-      properties: {
-        name: { 
-          type: 'string', 
-          minLength: 2, 
-          description: 'Nombre de la agencia, debe tener al menos 2 caracteres',
-        },
-      },
-      required: ['name'], // El nombre es obligatorio al crear una nueva agencia
+  @Get()
+  @ApiOperation({ summary: 'Obtener todas las agencias con filtros y paginación' })
+  @ApiQuery({
+    name: 'filters',
+    required: false,
+    type: String,
+    description: 'Filtros dinámicos en formato JSON para buscar agencias',
+    examples: {
+      byName: { value: '{"name": {"contains": "Health", "mode": "insensitive"}}', summary: 'Filtrar por nombre parcial' },
+      byExactName: { value: '{"name": "Health Agency"}', summary: 'Filtrar por nombre exacto' },
+      empty: { value: '{}', summary: 'Sin filtros (todas las agencias)' },
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Número de página para paginación',
+    examples: {
+      firstPage: { value: 1, summary: 'Primera página' },
+      secondPage: { value: 2, summary: 'Segunda página' },
+    },
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    description: 'Cantidad de registros por página',
+    examples: {
+      small: { value: 5, summary: '5 registros por página' },
+      default: { value: 10, summary: '10 registros por página (predeterminado)' },
+      large: { value: 20, summary: '20 registros por página' },
+    },
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+    description: 'Campo por el cual ordenar los resultados',
+    examples: {
+      byCreatedAt: { value: 'createdAt', summary: 'Ordenar por fecha de creación' },
+      byName: { value: 'name', summary: 'Ordenar por nombre' },
+      byId: { value: 'id', summary: 'Ordenar por ID' },
+    },
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['asc', 'desc'],
+    description: 'Dirección del ordenamiento',
+    examples: {
+      ascending: { value: 'asc', summary: 'Orden ascendente' },
+      descending: { value: 'desc', summary: 'Orden descendente' },
     },
   })
   @ApiResponse({
-    status: 201,
-    description: 'Agencia creada exitosamente',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Solicitud incorrecta',
-  })
-  create(@Body() createAgenciesDto: CreateAgencyDto) {
-    return this.agenciesService.create(createAgenciesDto);
-  }
-
-  // Obtener todas las agencias
-  @Get()
-  @ApiResponse({
     status: 200,
-    description: 'Lista de todas las agencias',
+    description: 'Lista paginada de agencias',
+    type: PaginatedAgencyResponseDto,
   })
-  findAll() {
-    return this.agenciesService.findAll();
+  @ApiResponse({ status: 400, description: 'Formato de filtros inválido' })
+  async findAll(
+    @Query('filters') filters: string = '{}',
+    @Query('page', ParseIntPipe) page: number = 1,
+    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+    @Query('sortBy') sortBy: string = 'createdAt',
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
+  ): Promise<PaginatedResult<Agency>> {
+    let parsedFilters: FilterOptions;
+    try {
+      parsedFilters = JSON.parse(filters);
+    } catch (error) {
+      throw new BadRequestException('Invalid filters format. Must be valid JSON.');
+    }
+
+    const pagination: PaginationOptions = { page, pageSize };
+    const sort: SortOptions = { sortBy, sortOrder };
+
+    return this.agenciesService.findAll(parsedFilters, pagination, sort);
   }
 
-  // Obtener una agencia por id
   @Get(':id')
-  @ApiResponse({
-    status: 200,
-    description: 'Agencia encontrada',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Agencia no encontrada',
-  })
-  findOne(@Param('id') id: number) {
+  @ApiOperation({ summary: 'Obtener una agencia por ID' })
+  @ApiResponse({ status: 200, description: 'Agencia encontrada' })
+  @ApiResponse({ status: 404, description: 'Agencia no encontrada' })
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.agenciesService.findOne(id);
   }
 
-  // Actualizar una agencia
-  @Put(':id')
-  @ApiOperation({ summary: 'Actualizar una agencia existente' })
-  @ApiBody({
-    description: 'Datos para actualizar una agencia',
-    schema: {
-      type: 'object',
-      properties: {
-        name: { 
-          type: 'string', 
-          minLength: 2, 
-          description: 'Nombre de la agencia, debe tener al menos 2 caracteres' 
-        },
-      },
-      required: ['name'], // El nombre es obligatorio al actualizar una agencia
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'La agencia ha sido actualizada correctamente.',
-  })
-  @ApiResponse({ status: 400, description: 'Solicitud incorrecta' })
-  @ApiResponse({ status: 404, description: 'Agencia no encontrada' })
-  update(@Param('id') id: number, @Body() updateAgenciesDto: UpdateAgencyDto) {
-    return this.agenciesService.update(id, updateAgenciesDto);
+  @Post()
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @ApiOperation({ summary: 'Crear una nueva agencia' })
+  @ApiBody({ type: CreateAgencyDto })
+  @ApiResponse({ status: 201, description: 'Agencia creada' })
+  async create(@Body() createAgencyDto: CreateAgencyDto) {
+    return this.agenciesService.create(createAgencyDto);
   }
 
-  // Eliminar una agencia
+  @Put(':id')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @ApiOperation({ summary: 'Actualizar una agencia existente' })
+  @ApiBody({ type: UpdateAgencyDto })
+  @ApiResponse({ status: 200, description: 'Agencia actualizada' })
+  async update(@Param('id', ParseIntPipe) id: number, @Body() updateAgencyDto: UpdateAgencyDto) {
+    return this.agenciesService.update(id, updateAgencyDto);
+  }
+
   @Delete(':id')
-  @ApiResponse({
-    status: 200,
-    description: 'Agencia eliminada exitosamente',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Agencia no encontrada',
-  })
-  remove(@Param('id') id: number) {
-    return this.agenciesService.remove(id);
+  @ApiOperation({ summary: 'Eliminar una agencia' })
+  @ApiResponse({ status: 200, description: 'Agencia eliminada' })
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    await this.agenciesService.remove(id);
+    return { success: true, message: 'Agency deleted successfully' };
   }
 }

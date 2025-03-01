@@ -1,29 +1,20 @@
-import { Transform, Type } from 'class-transformer';
-import { IsString, IsEmail, IsBoolean, IsOptional, IsInt, ValidateNested } from 'class-validator';
-import { ConnectAgencyDto, CreateAgencyDto } from 'src/agencies/dto/create-agency.dto';
+import { IsString, IsInt, IsOptional } from 'class-validator';
 
+/**
+ * DTO para crear un nuevo administrador de casos.
+ */
 export class CreateCaseManagerDto {
-  @IsString()
-  @Transform(({ value }) => value.toString())
+  @IsString({ message: 'Name must be a string' })
   name: string;
 
-  @IsString()
-  @Transform(({ value }) => value.toString())
-  email: string;
-
-  @IsString()
-  @Transform(({ value }) => value.toString())
-  phone: string;
-
-  @IsBoolean()
+  @IsString({ message: 'Email must be a string' })
   @IsOptional()
-  isActive?: boolean;
+  email?: string;
 
+  @IsString({ message: 'Phone must be a string' })
   @IsOptional()
-  @ValidateNested()
-  @Type(() => CreateAgencyDto)
-  agency?: {
-    create?: CreateAgencyDto;
-    connect?: ConnectAgencyDto;
-  };
+  phone?: string;
+
+  @IsInt({ message: 'AgencyId must be an integer' })
+  agencyId: number;
 }

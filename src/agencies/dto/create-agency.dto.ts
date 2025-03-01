@@ -1,12 +1,9 @@
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsString } from 'class-validator';
 
+/**
+ * DTO para crear una nueva agencia.
+ */
 export class CreateAgencyDto {
-  @IsString()
+  @IsString({ message: 'Name must be a string' })
   name: string;
-}
-
-export class ConnectAgencyDto {
-  @IsOptional()
-  @IsInt()
-  id?: number;
 }

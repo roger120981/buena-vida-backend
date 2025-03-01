@@ -1,13 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
-import { HttpExceptionInterceptor } from './common/interceptors/http-exception.interceptor'
+import { ValidationPipe } from '@nestjs/common'; // Comentar esta importación
+import { HttpExceptionInterceptor } from './common/interceptors/http-exception.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true, skipMissingProperties: false }));
+  app.useGlobalPipes(new ValidationPipe({ 
+    whitelist: true, 
+    transform: true, 
+    forbidNonWhitelisted: true, 
+    skipMissingProperties: false,
+    transformOptions: { enableImplicitConversion: false }
+   })); 
   app.useGlobalInterceptors(new HttpExceptionInterceptor());
 
   const config = new DocumentBuilder()
