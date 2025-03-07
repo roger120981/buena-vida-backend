@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { Participant } from '@prisma/client';
 import { CreateParticipantDto } from '../dto/create-participant.dto';
 import { UpdateParticipantDto } from '../dto/update-participant.dto';
-import { FilterOptions, PaginationOptions, SortOptions, PaginatedResult, applyFilters } from 'src/common/utils/pagination.filter.util';
+import { FilterOptions, PaginationOptions, SortOptions, PaginatedResult, applyFilters, QueryOptions } from 'src/common/utils/pagination.filter.util';
 
 @Injectable()
 export class ParticipantRepository {
@@ -53,12 +53,21 @@ export class ParticipantRepository {
     pagination: PaginationOptions = { page: 1, pageSize: 10 },
     sort: SortOptions = { sortBy: 'createdAt', sortOrder: 'asc' },
   ): Promise<PaginatedResult<Participant>> {
+    const queryOptions: QueryOptions = {
+      include: {
+        caseManager: {
+          select: { id: true, name: true }, // Solo id y name por ahora
+        },
+      },
+    };
+
     return applyFilters(
       this.prisma.participant,
       filters,
       pagination,
       sort,
-      ['id', 'name', 'gender', 'medicaidId', 'dob', 'location', 'community', 'address', 'primaryPhone', 'secondaryPhone', 'isActive', 'locStartDate', 'locEndDate', 'pocStartDate', 'pocEndDate', 'units', 'hours', 'hdm', 'adhc', 'cmID', 'createdAt', 'updatedAt']
+      ['id', 'name', 'gender', 'medicaidId', 'dob', 'location', 'community', 'address', 'primaryPhone', 'secondaryPhone', 'isActive', 'locStartDate', 'locEndDate', 'pocStartDate', 'pocEndDate', 'units', 'hours', 'hdm', 'adhc', 'cmID', 'createdAt', 'updatedAt'],
+      queryOptions,
     );
   }
 

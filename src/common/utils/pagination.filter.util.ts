@@ -1,29 +1,18 @@
+// src/common/applyFilters.ts (ajusta la ruta según tu estructura)
 import { BadRequestException } from '@nestjs/common';
 
-/**
- * Opciones de filtrado dinámico para consultas Prisma.
- */
 export type FilterOptions = Record<string, any>;
 
-/**
- * Opciones de paginación.
- */
 export interface PaginationOptions {
   page: number;
   pageSize: number;
 }
 
-/**
- * Opciones de ordenamiento.
- */
 export interface SortOptions {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
 }
 
-/**
- * Resultado paginado genérico.
- */
 export interface PaginatedResult<T> {
   data: T[];
   total: number;
@@ -33,15 +22,18 @@ export interface PaginatedResult<T> {
   hasNext: boolean;
 }
 
-/**
- * Aplica filtros, paginación y ordenamiento a cualquier modelo de Prisma.
- */
+export interface QueryOptions {
+  include?: Record<string, boolean | QueryOptions>;
+  select?: Record<string, boolean | QueryOptions>;
+}
+
 export async function applyFilters<T>(
   prismaModel: { findMany: (args: any) => Promise<T[]>; count: (args: any) => Promise<number> },
   filters: FilterOptions = {},
   pagination: PaginationOptions = { page: 1, pageSize: 10 },
   sort: SortOptions = { sortBy: 'createdAt', sortOrder: 'asc' },
   validSortFields?: string[],
+  queryOptions: QueryOptions = {}, // Nuevo parámetro opcional
 ): Promise<PaginatedResult<T>> {
   // Validaciones
   if (!Number.isInteger(pagination.page) || pagination.page < 1) {
@@ -69,7 +61,7 @@ export async function applyFilters<T>(
   if (where.locStartDate) where.locStartDate = { gte: new Date(where.locStartDate) };
   if (where.locEndDate) where.locEndDate = { lte: new Date(where.locEndDate) };
 
-  // Ejecución paralela
+  // Ejecución paralela con include y select
   const [total, data] = await Promise.all([
     prismaModel.count({ where }),
     prismaModel.findMany({
@@ -77,6 +69,8 @@ export async function applyFilters<T>(
       skip,
       take,
       orderBy: { [sort.sortBy]: sort.sortOrder },
+      include: queryOptions.include,
+      select: queryOptions.select,
     }),
   ]);
 
