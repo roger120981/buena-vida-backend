@@ -17,73 +17,18 @@ export class CaseManagersController {
 
   @Get()
   @ApiOperation({ summary: 'Obtener todos los administradores de casos con filtros y paginación' })
-  @ApiQuery({
-    name: 'filters',
-    required: false,
-    type: String,
-    description: 'Filtros dinámicos en formato JSON para buscar administradores de casos',
-    examples: {
-      byAgency: { value: '{"agencyId": 1}', summary: 'Filtrar por ID de agencia' },
-      byName: { value: '{"name": {"contains": "Jane", "mode": "insensitive"}}', summary: 'Filtrar por nombre parcial' },
-      byEmail: { value: '{"email": {"contains": "jane@example.com"}}', summary: 'Filtrar por email parcial' },
-      byMultiple: { value: '{"agencyId": 2, "phone": {"contains": "555"}}', summary: 'Filtrar por agencia y teléfono' },
-      empty: { value: '{}', summary: 'Sin filtros (todos los administradores)' },
-    },
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Número de página para paginación',
-    examples: {
-      firstPage: { value: 1, summary: 'Primera página' },
-      secondPage: { value: 2, summary: 'Segunda página' },
-      fifthPage: { value: 5, summary: 'Quinta página' },
-    },
-  })
-  @ApiQuery({
-    name: 'pageSize',
-    required: false,
-    type: Number,
-    description: 'Cantidad de registros por página',
-    examples: {
-      small: { value: 5, summary: '5 registros por página' },
-      default: { value: 10, summary: '10 registros por página (predeterminado)' },
-      large: { value: 25, summary: '25 registros por página' },
-    },
-  })
-  @ApiQuery({
-    name: 'sortBy',
-    required: false,
-    type: String,
-    description: 'Campo por el cual ordenar los resultados',
-    examples: {
-      byCreatedAt: { value: 'createdAt', summary: 'Ordenar por fecha de creación' },
-      byName: { value: 'name', summary: 'Ordenar por nombre' },
-      byEmail: { value: 'email', summary: 'Ordenar por email' },
-      byAgencyId: { value: 'agencyId', summary: 'Ordenar por ID de agencia' },
-    },
-  })
-  @ApiQuery({
-    name: 'sortOrder',
-    required: false,
-    enum: ['asc', 'desc'],
-    description: 'Dirección del ordenamiento',
-    examples: {
-      ascending: { value: 'asc', summary: 'Orden ascendente' },
-      descending: { value: 'desc', summary: 'Orden descendente' },
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista paginada de administradores de casos',
-    type: PaginatedCaseManagerResponseDto,
-  })
+  @ApiQuery({ name: 'filters', required: false, type: String, description: 'Filtros dinámicos en formato JSON' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número de página' })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, description: 'Cantidad de registros por página' })
+  @ApiQuery({ name: 'sortBy', required: false, type: String, description: 'Campo por el cual ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], description: 'Dirección del ordenamiento' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de administradores de casos', type: PaginatedCaseManagerResponseDto })
   @ApiResponse({ status: 400, description: 'Formato de filtros inválido' })
   async findAll(
     @Query('filters') filters: string = '{}',
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+    // MODIFICACIÓN: Quité ParseIntPipe y manejamos la conversión manualmente
+    @Query('page') page: string = '1', // Cambié a string para evitar fallo inmediato
+    @Query('pageSize') pageSize: string = '10', // Cambié a string
     @Query('sortBy') sortBy: string = 'createdAt',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<PaginatedResult<CaseManager>> {
@@ -94,7 +39,11 @@ export class CaseManagersController {
       throw new BadRequestException('Invalid filters format. Must be valid JSON.');
     }
 
-    const pagination: PaginationOptions = { page, pageSize };
+    // MODIFICACIÓN: Convertimos page y pageSize a números con valores por defecto
+    const parsedPage = parseInt(page, 10) || 1;
+    const parsedPageSize = parseInt(pageSize, 10) || 10;
+
+    const pagination: PaginationOptions = { page: parsedPage, pageSize: parsedPageSize };
     const sort: SortOptions = { sortBy, sortOrder };
 
     return this.caseManagersService.findAll(parsedFilters, pagination, sort);

@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe, ValidationPipe, UsePipes, BadRequestException, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe, ValidationPipe, UsePipes, BadRequestException, Req, HttpException, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBody, ApiResponse, ApiProperty } from '@nestjs/swagger';
 import { ParticipantsService } from './participants.service';
 import { CaregiversService } from 'src/caregiver/caregivers.service';
 import { CreateParticipantDto } from './dto/create-participant.dto';
@@ -8,7 +8,7 @@ import { FilterOptions, PaginationOptions, SortOptions, PaginatedResult } from '
 import { Participant } from '@prisma/client';
 import { PaginatedParticipantResponseDto } from './dto/paginated-participant-response.dto';
 import { NotFoundException as CustomNotFoundException } from './../common/exceptions/not-found.exception'; // Asegúrate de importar la versión personalizada
-
+import { Request } from 'express';
 
 @ApiTags('Participants')
 @Controller('participants')
@@ -211,12 +211,16 @@ async unassignCaregiver(
   @ApiOperation({ summary: 'Obtener participantes por estado (activo/inactivo)' })
   @ApiResponse({ status: 200, description: 'Lista de participantes' })
   @ApiResponse({ status: 404, description: 'No se encontraron participantes' })
-  async findByStatus(@Param('isActive', ParseIntPipe) isActive: number) {
-    const participants = await this.participantsService.findByStatus(isActive === 1);
-    if (!participants.length) {
-      throw new CustomNotFoundException('Participants', 'status', 'NO_PARTICIPANTS_FOUND_WITH_STATUS'); // Usamos la versión personalizada
+  @ApiResponse({ status: 400, description: 'Validación fallida (se espera un valor numérico 0 o 1)' })
+  @ApiParam({ name: 'isActive', type: 'integer', description: '1 para activo, 0 para inactivo', example: 1 })
+  async findByStatus(@Param('isActive', new ParseIntPipe({ errorHttpStatusCode: HttpStatus.BAD_REQUEST })) isActive: string) {
+    console.log('Reached /status/:isActive with isActive:', isActive);
+    const isActiveNum = Number(isActive);
+    if (isNaN(isActiveNum) || (isActiveNum !== 0 && isActiveNum !== 1)) {
+      throw new HttpException('isActive debe ser 0 o 1', HttpStatus.BAD_REQUEST);
     }
-    return participants;
+    const isActiveBool = isActiveNum === 1;
+    return this.participantsService.findByStatus(isActiveBool);
   }
 
   @Get('date-range/:startDate/:endDate')
@@ -254,5 +258,5 @@ async unassignCaregiver(
       throw new CustomNotFoundException('Participants', 'date-range', 'NO_PARTICIPANTS_FOUND_IN_DATE_RANGE');
     }
     return participants;
-  }
+  }  
 }

@@ -60,5 +60,5 @@ export class ParticipantsService {
 
   async findByDateRange(startDate: string, endDate: string): Promise<Participant[]> {
     return this.participantRepository.findByDateRange(startDate, endDate);
-  }
+  }  
 }
