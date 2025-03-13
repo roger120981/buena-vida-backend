@@ -7,9 +7,6 @@ import { FilterOptions, PaginatedResult, PaginationOptions, SortOptions } from '
 import { PaginatedAgencyResponseDto } from './dto/paginated-agency-response.dto';
 import { Agency } from '@prisma/client';
 
-/**
- * Controlador para manejar operaciones CRUD de agencias.
- */
 @ApiTags('Agencies')
 @Controller('agencies')
 export class AgenciesController {
@@ -78,11 +75,13 @@ export class AgenciesController {
   @ApiResponse({ status: 400, description: 'Formato de filtros inválido' })
   async findAll(
     @Query('filters') filters: string = '{}',
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+    @Query('page') page: string = '1', // MODIFICACIÓN: Cambiar a string
+    @Query('pageSize') pageSize: string = '10', // MODIFICACIÓN: Cambiar a string
     @Query('sortBy') sortBy: string = 'createdAt',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<PaginatedResult<Agency>> {
+    console.log('Received parameters:', { filters, page, pageSize, sortBy, sortOrder }); // MODIFICACIÓN: Depuración
+
     let parsedFilters: FilterOptions;
     try {
       parsedFilters = JSON.parse(filters);
@@ -90,7 +89,15 @@ export class AgenciesController {
       throw new BadRequestException('Invalid filters format. Must be valid JSON.');
     }
 
-    const pagination: PaginationOptions = { page, pageSize };
+    // MODIFICACIÓN: Convertir manualmente a números
+    const parsedPage = parseInt(page, 10) || 1;
+    const parsedPageSize = parseInt(pageSize, 10) || 10;
+
+    if (isNaN(parsedPage) || isNaN(parsedPageSize)) {
+      throw new BadRequestException('page and pageSize must be valid numbers');
+    }
+
+    const pagination: PaginationOptions = { page: parsedPage, pageSize: parsedPageSize };
     const sort: SortOptions = { sortBy, sortOrder };
 
     return this.agenciesService.findAll(parsedFilters, pagination, sort);

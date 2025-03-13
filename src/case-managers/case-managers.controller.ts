@@ -1,3 +1,4 @@
+// case-managers.controller.ts
 import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe, ValidationPipe, UsePipes, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { CaseManagersService } from './case-managers.service';
@@ -7,9 +8,6 @@ import { FilterOptions, PaginatedResult, PaginationOptions, SortOptions } from '
 import { CaseManager } from '@prisma/client';
 import { PaginatedCaseManagerResponseDto } from './dto/paginated-case-manager-response.dto';
 
-/**
- * Controlador para manejar operaciones CRUD de administradores de casos.
- */
 @ApiTags('CaseManagers')
 @Controller('case-managers')
 export class CaseManagersController {
@@ -26,9 +24,8 @@ export class CaseManagersController {
   @ApiResponse({ status: 400, description: 'Formato de filtros inválido' })
   async findAll(
     @Query('filters') filters: string = '{}',
-    // MODIFICACIÓN: Quité ParseIntPipe y manejamos la conversión manualmente
-    @Query('page') page: string = '1', // Cambié a string para evitar fallo inmediato
-    @Query('pageSize') pageSize: string = '10', // Cambié a string
+    @Query('page') page: string = '1',
+    @Query('pageSize') pageSize: string = '10',
     @Query('sortBy') sortBy: string = 'createdAt',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<PaginatedResult<CaseManager>> {
@@ -39,7 +36,6 @@ export class CaseManagersController {
       throw new BadRequestException('Invalid filters format. Must be valid JSON.');
     }
 
-    // MODIFICACIÓN: Convertimos page y pageSize a números con valores por defecto
     const parsedPage = parseInt(page, 10) || 1;
     const parsedPageSize = parseInt(pageSize, 10) || 10;
 
@@ -63,7 +59,13 @@ export class CaseManagersController {
   @ApiBody({ type: CreateCaseManagerDto })
   @ApiResponse({ status: 201, description: 'Administrador de casos creado' })
   async create(@Body() createCaseManagerDto: CreateCaseManagerDto) {
-    return this.caseManagersService.create(createCaseManagerDto);
+    try {
+      const createdCaseManager = await this.caseManagersService.create(createCaseManagerDto);
+      return { success: true, message: "Created", data: createdCaseManager };
+    } catch (error) {
+      console.error("Error creating case manager in backend:", error); // MODIFICACIÓN: Depuración
+      throw new Error("Failed to create case manager: " + (error.message || "Unknown error"));
+    }
   }
 
   @Put(':id')
