@@ -1,3 +1,4 @@
+// caregivers.controller.ts
 import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe, ValidationPipe, UsePipes, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { CaregiversService } from './caregivers.service';
@@ -81,11 +82,13 @@ export class CaregiversController {
   @ApiResponse({ status: 400, description: 'Formato de filtros inválido' })
   async findAll(
     @Query('filters') filters: string = '{}',
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+    @Query('page') page: string = '1', // Recibimos como cadena
+    @Query('pageSize') pageSize: string = '10', // Recibimos como cadena
     @Query('sortBy') sortBy: string = 'createdAt',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<PaginatedResult<Caregiver>> {
+    console.log('Received parameters:', { filters, page, pageSize, sortBy, sortOrder }); // Depuración
+
     let parsedFilters: FilterOptions;
     try {
       parsedFilters = JSON.parse(filters);
@@ -93,7 +96,15 @@ export class CaregiversController {
       throw new BadRequestException('Invalid filters format. Must be valid JSON.');
     }
 
-    const pagination: PaginationOptions = { page, pageSize };
+    // Convertimos los parámetros a números con valores por defecto
+    const parsedPage = parseInt(page, 10) || 1;
+    const parsedPageSize = parseInt(pageSize, 10) || 10;
+
+    if (isNaN(parsedPage) || isNaN(parsedPageSize)) {
+      throw new BadRequestException('page and pageSize must be valid numbers');
+    }
+
+    const pagination: PaginationOptions = { page: parsedPage, pageSize: parsedPageSize };
     const sort: SortOptions = { sortBy, sortOrder };
 
     return this.caregiversService.findAll(parsedFilters, pagination, sort);
