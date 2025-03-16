@@ -83,7 +83,21 @@ export class ParticipantRepository {
     if (isNaN(id)) {
       throw new Error('The participantId must be a valid number');
     }
-    const participant = await this.prisma.participant.findUnique({ where: { id } });
+    const participant = await this.prisma.participant.findUnique({
+      where: { id },
+      include: {
+        caregivers: {
+          include: {
+            caregiver: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
     if (!participant) {
       throw new NotFoundException(`Participant with ID ${id} not found`);
     }
