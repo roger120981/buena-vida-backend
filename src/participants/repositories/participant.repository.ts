@@ -142,11 +142,43 @@ export class ParticipantRepository {
     });
   }
 
-  async remove(id: number): Promise<Participant> {
+  // Soft delete: marcar el participante como inactivo
+  async softDelete(id: number): Promise<Participant> {
     return this.prisma.participant.update({
       where: { id },
       data: { isActive: false },
     });
+  }
+
+  // Hard delete: eliminar el participante permanentemente
+  async hardDelete(id: number): Promise<void> {
+    try {
+      // Eliminar las asignaciones de caregivers relacionadas (si existen)
+      await this.prisma.participantsOnCaregivers.deleteMany({
+        where: { participantId: id },
+      });
+
+      // Reasignar el participante al CaseManager predeterminado (id: 1)
+      await this.prisma.participant.update({
+        where: { id },
+        data: {
+          caseManager: {
+            connect: { id: 1 }, // Reasignar al CaseManager predeterminado (id: 1)
+          },
+        },
+      });
+
+      // Eliminar el participante de forma permanente
+      await this.prisma.participant.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (error.code === 'P2025') {
+        // Error de Prisma: el registro no existe
+        throw new NotFoundException(`Participant with ID ${id} not found`);
+      }
+      throw new Error(`Failed to delete participant: ${error.message}`);
+    }
   }
 
   async findCaregivers(id: number): Promise<any> {

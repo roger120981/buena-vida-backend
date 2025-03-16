@@ -144,9 +144,19 @@ export class ParticipantsController {
   @Delete(':id')
   @ApiOperation({ summary: 'Desactivar un participante (soft delete)' })
   @ApiResponse({ status: 200, description: 'Participante desactivado' })
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    await this.participantsService.remove(id);
+  @ApiResponse({ status: 404, description: 'Participante no encontrado' })
+  async softDelete(@Param('id', ParseIntPipe) id: number) {
+    await this.participantsService.softDelete(id);
     return { success: true, message: 'Participant deactivated successfully' };
+  }
+
+  @Delete(':id/permanent')
+  @ApiOperation({ summary: 'Eliminar un participante permanentemente (hard delete)' })
+  @ApiResponse({ status: 200, description: 'Participante eliminado permanentemente' })
+  @ApiResponse({ status: 404, description: 'Participante no encontrado' })
+  async hardDelete(@Param('id', ParseIntPipe) id: number) {
+    await this.participantsService.hardDelete(id);
+    return { success: true, message: 'Participant deleted permanently' };
   }
 
   @Get(':id/caregivers')

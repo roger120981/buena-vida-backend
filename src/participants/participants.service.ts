@@ -37,9 +37,16 @@ export class ParticipantsService {
     return this.participantRepository.update(id, updateParticipantDto);
   }
 
-  async remove(id: number): Promise<Participant> {
+  // Soft delete: marcar el participante como inactivo
+  async softDelete(id: number): Promise<Participant> {
     await this.findById(id);
-    return this.participantRepository.remove(id);
+    return this.participantRepository.softDelete(id);
+  }
+
+  // Hard delete: eliminar el participante permanentemente
+  async hardDelete(id: number): Promise<void> {
+    await this.findById(id);
+    await this.participantRepository.hardDelete(id);
   }
 
   async findCaregivers(id: number): Promise<any> {
