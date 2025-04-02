@@ -98,7 +98,7 @@ export class ParticipantsController {
     @Query('pageSize', ParseIntPipe) pageSize: number = 10,
     @Query('sortBy') sortBy: string = 'createdAt',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<PaginatedResult<Participant>> {
+  ): Promise<PaginatedResult<Participant> & { filterCounts: { isActive: { true: number; false: number }; gender: { M: number; F: number; O: number } } }> {
     let parsedFilters: FilterOptions;
     try {
       parsedFilters = JSON.parse(filters);

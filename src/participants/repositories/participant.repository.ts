@@ -52,7 +52,7 @@ export class ParticipantRepository {
     filters: FilterOptions = {},
     pagination: PaginationOptions = { page: 1, pageSize: 10 },
     sort: SortOptions = { sortBy: 'createdAt', sortOrder: 'asc' },
-  ): Promise<PaginatedResult<Participant>> {
+  ): Promise<PaginatedResult<Participant> & { filterCounts: { isActive: { true: number; false: number }; gender: { M: number; F: number; O: number } } }> {
     const queryOptions: QueryOptions = {
       include: {
         caseManager: {
@@ -61,7 +61,8 @@ export class ParticipantRepository {
       },
     };
 
-    return applyFilters(
+    // Obtener resultado paginado con applyFilters
+    const paginatedResult = await applyFilters(
       this.prisma.participant,
       filters,
       pagination,
@@ -69,6 +70,23 @@ export class ParticipantRepository {
       ['id', 'name', 'gender', 'medicaidId', 'dob', 'location', 'community', 'address', 'primaryPhone', 'secondaryPhone', 'isActive', 'locStartDate', 'locEndDate', 'pocStartDate', 'pocEndDate', 'units', 'hours', 'hdm', 'adhc', 'cmID', 'createdAt', 'updatedAt'],
       queryOptions,
     );
+
+    // Calcular conteos totales de filtros
+    const [activeCount, inactiveCount, genderMCount, genderFCount, genderOCount] = await Promise.all([
+      this.prisma.participant.count({ where: { ...filters, isActive: true } }),
+      this.prisma.participant.count({ where: { ...filters, isActive: false } }),
+      this.prisma.participant.count({ where: { ...filters, gender: 'M' } }),
+      this.prisma.participant.count({ where: { ...filters, gender: 'F' } }),
+      this.prisma.participant.count({ where: { ...filters, gender: 'O' } }),
+    ]);
+
+    return {
+      ...paginatedResult,
+      filterCounts: {
+        isActive: { true: activeCount, false: inactiveCount },
+        gender: { M: genderMCount, F: genderFCount, O: genderOCount },
+      },
+    };
   }
 
   async findOne(id: number): Promise<Participant> {

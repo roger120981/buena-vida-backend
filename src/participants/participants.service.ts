@@ -17,7 +17,7 @@ export class ParticipantsService {
     filters: FilterOptions = {},
     pagination: PaginationOptions = { page: 1, pageSize: 10 },
     sort: SortOptions = { sortBy: 'createdAt', sortOrder: 'asc' },
-  ): Promise<PaginatedResult<Participant>> {
+  ): Promise<PaginatedResult<Participant> & { filterCounts: { isActive: { true: number; false: number }; gender: { M: number; F: number; O: number } } }> {
     return this.participantRepository.findAll(filters, pagination, sort);
   }
 
