@@ -105,12 +105,10 @@ export class ParticipantsController {
       parsedFilters = JSON.parse(filters);
       console.log('Parsed filters:', parsedFilters);
 
-      // Convertir arrays en objetos compatibles con Prisma
       for (const key in parsedFilters) {
         if (Array.isArray(parsedFilters[key])) {
           const values = parsedFilters[key];
           if (key === 'isActive') {
-            // Manejar filtros booleanos
             const boolValues = values.map((v) => {
               if (typeof v === 'string') {
                 if (v === 'true') return true;
@@ -120,15 +118,16 @@ export class ParticipantsController {
               return v;
             });
             if (boolValues.length === 1) {
-              parsedFilters[key] = boolValues[0]; // Valor simple: true o false
+              parsedFilters[key] = boolValues[0];
             } else if (boolValues.length === 2 && boolValues.includes(true) && boolValues.includes(false)) {
-              parsedFilters[key] = undefined; // Ambos valores, no filtrar
+              parsedFilters[key] = undefined;
             } else {
               throw new BadRequestException('Invalid isActive filter: only one value or both true/false allowed');
             }
+          } else if (key === 'name') {
+            parsedFilters[key] = values.length > 0 && values[0] !== '' ? { contains: values[0], mode: 'insensitive' } : undefined;
           } else {
-            // Para otros campos (como gender), usar 'in'
-            parsedFilters[key] = { in: values };
+            parsedFilters[key] = values.length > 0 ? { in: values } : undefined;
           }
         }
       }
