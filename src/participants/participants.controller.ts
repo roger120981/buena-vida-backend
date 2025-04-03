@@ -101,15 +101,52 @@ export class ParticipantsController {
   ): Promise<PaginatedResult<Participant> & { filterCounts: { isActive: { true: number; false: number }; gender: { M: number; F: number; O: number } } }> {
     let parsedFilters: FilterOptions;
     try {
+      console.log('Raw filters received:', filters);
       parsedFilters = JSON.parse(filters);
+      console.log('Parsed filters:', parsedFilters);
+
+      // Convertir arrays en objetos compatibles con Prisma
+      for (const key in parsedFilters) {
+        if (Array.isArray(parsedFilters[key])) {
+          const values = parsedFilters[key];
+          if (key === 'isActive') {
+            // Manejar filtros booleanos
+            const boolValues = values.map((v) => {
+              if (typeof v === 'string') {
+                if (v === 'true') return true;
+                if (v === 'false') return false;
+                throw new BadRequestException(`Invalid boolean value in isActive: ${v}`);
+              }
+              return v;
+            });
+            if (boolValues.length === 1) {
+              parsedFilters[key] = boolValues[0]; // Valor simple: true o false
+            } else if (boolValues.length === 2 && boolValues.includes(true) && boolValues.includes(false)) {
+              parsedFilters[key] = undefined; // Ambos valores, no filtrar
+            } else {
+              throw new BadRequestException('Invalid isActive filter: only one value or both true/false allowed');
+            }
+          } else {
+            // Para otros campos (como gender), usar 'in'
+            parsedFilters[key] = { in: values };
+          }
+        }
+      }
+      console.log('Processed filters for Prisma:', parsedFilters);
     } catch (error) {
+      console.error('Error parsing filters:', error);
       throw new BadRequestException('Invalid filters format. Must be valid JSON.');
     }
 
     const pagination: PaginationOptions = { page, pageSize };
     const sort: SortOptions = { sortBy, sortOrder };
 
-    return this.participantsService.findAll(parsedFilters, pagination, sort);
+    try {
+      return await this.participantsService.findAll(parsedFilters, pagination, sort);
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Get(':id')
