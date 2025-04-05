@@ -30,7 +30,7 @@ export interface QueryOptions {
 export async function applyFilters<T>(
   prismaModel: { findMany: (args: any) => Promise<T[]>; count: (args: any) => Promise<number> },
   filters: FilterOptions = {},
-  pagination: PaginationOptions = { page: 1, pageSize: 10 },
+  pagination: PaginationOptions = { page: 1, pageSize: 1000 },
   sort: SortOptions = { sortBy: 'createdAt', sortOrder: 'asc' },
   validSortFields?: string[],
   queryOptions: QueryOptions = {}, // Nuevo parámetro opcional
@@ -49,7 +49,7 @@ export async function applyFilters<T>(
     throw new BadRequestException(`Invalid sortBy field: ${sort.sortBy}. Allowed fields: ${validSortFields.join(', ')}`);
   }
 
-  const maxPageSize = 100;
+  const maxPageSize = 1000;
   const effectivePageSize = Math.min(pagination.pageSize, maxPageSize);
   const skip = (pagination.page - 1) * effectivePageSize;
   const take = effectivePageSize;

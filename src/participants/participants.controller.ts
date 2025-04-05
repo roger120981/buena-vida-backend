@@ -95,7 +95,7 @@ export class ParticipantsController {
   async findAll(
     @Query('filters') filters: string = '{}',
     @Query('page') page: string = '1', // Cambiado a string con valor por defecto
-    @Query('pageSize') pageSize: string = '10', // Cambiado a string con valor por defecto
+    @Query('pageSize') pageSize: string = '1000', // Cambiado a string con valor por defecto
     @Query('sortBy') sortBy: string = 'createdAt',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<PaginatedResult<Participant> & { filterCounts: { isActive: { true: number; false: number }; gender: { M: number; F: number; O: number } } }> {

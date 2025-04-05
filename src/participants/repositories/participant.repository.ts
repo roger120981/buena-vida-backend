@@ -59,13 +59,23 @@ export class ParticipantRepository {
   // Resto del código sin cambios...
   async findAll(
     filters: FilterOptions = {},
-    pagination: PaginationOptions = { page: 1, pageSize: 10 },
+    pagination: PaginationOptions = { page: 1, pageSize: 1000 },
     sort: SortOptions = { sortBy: 'createdAt', sortOrder: 'asc' },
   ): Promise<PaginatedResult<Participant> & { filterCounts: { isActive: { true: number; false: number }; gender: { M: number; F: number; O: number } } }> {
     const queryOptions: QueryOptions = {
       include: {
         caseManager: {
           select: { id: true, name: true },
+        },
+        caregivers: {
+          include: {
+            caregiver: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
         },
       },
     };
