@@ -94,17 +94,19 @@ export class ParticipantsController {
   @ApiResponse({ status: 400, description: 'Formato de filtros inválido' })
   async findAll(
     @Query('filters') filters: string = '{}',
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+    @Query('page') page: string = '1', // Cambiado a string con valor por defecto
+    @Query('pageSize') pageSize: string = '10', // Cambiado a string con valor por defecto
     @Query('sortBy') sortBy: string = 'createdAt',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<PaginatedResult<Participant> & { filterCounts: { isActive: { true: number; false: number }; gender: { M: number; F: number; O: number } } }> {
+    console.log('Received parameters:', { filters, page, pageSize, sortBy, sortOrder });
+  
     let parsedFilters: FilterOptions;
     try {
       console.log('Raw filters received:', filters);
       parsedFilters = JSON.parse(filters);
       console.log('Parsed filters:', parsedFilters);
-
+  
       for (const key in parsedFilters) {
         if (Array.isArray(parsedFilters[key])) {
           const values = parsedFilters[key];
@@ -136,10 +138,18 @@ export class ParticipantsController {
       console.error('Error parsing filters:', error);
       throw new BadRequestException('Invalid filters format. Must be valid JSON.');
     }
-
-    const pagination: PaginationOptions = { page, pageSize };
+  
+    // Convertir manualmente a números como en agencies
+    const parsedPage = parseInt(page, 10) || 1;
+    const parsedPageSize = parseInt(pageSize, 10) || 10;
+  
+    if (isNaN(parsedPage) || isNaN(parsedPageSize)) {
+      throw new BadRequestException('page and pageSize must be valid numbers');
+    }
+  
+    const pagination: PaginationOptions = { page: parsedPage, pageSize: parsedPageSize };
     const sort: SortOptions = { sortBy, sortOrder };
-
+  
     try {
       return await this.participantsService.findAll(parsedFilters, pagination, sort);
     } catch (error) {
