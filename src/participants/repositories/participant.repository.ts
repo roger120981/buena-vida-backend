@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Participant } from '@prisma/client';
+import { Participant, Prisma } from '@prisma/client';
 import { CreateParticipantDto } from '../dto/create-participant.dto';
 import { UpdateParticipantDto } from '../dto/update-participant.dto';
 import { FilterOptions, PaginationOptions, SortOptions, PaginatedResult, applyFilters, QueryOptions } from 'src/common/utils/pagination.filter.util';
@@ -14,40 +14,49 @@ export class ParticipantRepository {
       throw new BadRequestException('caseManager must include either create or connect');
     }
   
-    return this.prisma.participant.create({
-      data: {
-        name: data.name,
-        isActive: data.isActive ?? true,
-        gender: data.gender,
-        medicaidId: data.medicaidId,
-        dob: new Date(data.dob),
-        location: data.location,
-        community: data.community,
-        address: data.address,
-        primaryPhone: data.primaryPhone,
-        secondaryPhone: data.secondaryPhone ?? '',
-        locStartDate: new Date(data.locStartDate),
-        locEndDate: new Date(data.locEndDate),
-        pocStartDate: new Date(data.pocStartDate),
-        pocEndDate: new Date(data.pocEndDate),
-        units: data.units ?? 0,
-        hours: data.hours ?? 0,
-        hdm: data.hdm ?? false,
-        adhc: data.adhc ?? false,
-        caseManager: data.caseManager.create
-          ? {
-              create: {
-                name: data.caseManager.create.name,
-                email: data.caseManager.create.email,
-                phone: data.caseManager.create.phone,
-                agencyId: data.caseManager.create.agencyId,
-              },
-            }
-          : { connect: { id: data.caseManager.connect!.id } }, // El ! asegura que connect existe
-      },
-    });
+    try {
+      return await this.prisma.participant.create({
+        data: {
+          name: data.name,
+          isActive: data.isActive ?? true,
+          gender: data.gender,
+          medicaidId: data.medicaidId,
+          dob: new Date(data.dob),
+          location: data.location,
+          community: data.community,
+          address: data.address,
+          primaryPhone: data.primaryPhone,
+          secondaryPhone: data.secondaryPhone ?? '',
+          locStartDate: new Date(data.locStartDate),
+          locEndDate: new Date(data.locEndDate),
+          pocStartDate: new Date(data.pocStartDate),
+          pocEndDate: new Date(data.pocEndDate),
+          units: data.units ?? 0,
+          hours: data.hours ?? 0,
+          hdm: data.hdm ?? false,
+          adhc: data.adhc ?? false,
+          caseManager: data.caseManager.create
+            ? {
+                create: {
+                  name: data.caseManager.create.name,
+                  email: data.caseManager.create.email,
+                  phone: data.caseManager.create.phone,
+                  agencyId: data.caseManager.create.agencyId,
+                },
+              }
+            : { connect: { id: data.caseManager.connect!.id } },
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        // P2002 es el código de Prisma para violación de unicidad
+        throw new BadRequestException(`Participant with name "${data.name}" already exists`);
+      }
+      throw error; // Otros errores se propagan como 500
+    }
   }
 
+  // Resto del código sin cambios...
   async findAll(
     filters: FilterOptions = {},
     pagination: PaginationOptions = { page: 1, pageSize: 10 },
@@ -56,12 +65,11 @@ export class ParticipantRepository {
     const queryOptions: QueryOptions = {
       include: {
         caseManager: {
-          select: { id: true, name: true }, // Solo id y name por ahora
+          select: { id: true, name: true },
         },
       },
     };
 
-    // Obtener resultado paginado con applyFilters
     const paginatedResult = await applyFilters(
       this.prisma.participant,
       filters,
@@ -71,7 +79,6 @@ export class ParticipantRepository {
       queryOptions,
     );
 
-    // Calcular conteos totales de filtros
     const [activeCount, inactiveCount, genderMCount, genderFCount, genderOCount] = await Promise.all([
       this.prisma.participant.count({ where: { ...filters, isActive: true } }),
       this.prisma.participant.count({ where: { ...filters, isActive: false } }),
@@ -160,7 +167,6 @@ export class ParticipantRepository {
     });
   }
 
-  // Soft delete: marcar el participante como inactivo
   async softDelete(id: number): Promise<Participant> {
     return this.prisma.participant.update({
       where: { id },
@@ -168,31 +174,26 @@ export class ParticipantRepository {
     });
   }
 
-  // Hard delete: eliminar el participante permanentemente
   async hardDelete(id: number): Promise<void> {
     try {
-      // Eliminar las asignaciones de caregivers relacionadas (si existen)
       await this.prisma.participantsOnCaregivers.deleteMany({
         where: { participantId: id },
       });
 
-      // Reasignar el participante al CaseManager predeterminado (id: 1)
       await this.prisma.participant.update({
         where: { id },
         data: {
           caseManager: {
-            connect: { id: 1 }, // Reasignar al CaseManager predeterminado (id: 1)
+            connect: { id: 1 },
           },
         },
       });
 
-      // Eliminar el participante de forma permanente
       await this.prisma.participant.delete({
         where: { id },
       });
     } catch (error) {
       if (error.code === 'P2025') {
-        // Error de Prisma: el registro no existe
         throw new NotFoundException(`Participant with ID ${id} not found`);
       }
       throw new Error(`Failed to delete participant: ${error.message}`);
