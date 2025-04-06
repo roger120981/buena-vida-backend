@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Habilita PostGIS para geoespacial: CREATE EXTENSION postgis;
+
+model User {
+  id                  Int       @id @default(autoincrement())
+  firstName           String
+  lastName            String
+  username            String    @unique
+  email               String    @unique
+  phoneNumber         String?
+  role                String    // e.g., "admin", "caregiver", "caseManager", "family"
+  password            String    // Hash de la contraseña (bcrypt)
+  bio                 String?
+  websiteUrl          String?
+  dob                 DateTime?
+  languagePreference  String    @default("es")
+  themePreference     String    @default("light")
+  notificationPrefs   Json      // { "email": true, "sms": false }
+  sidebarItems        Json?     // ["dashboard", "participants"]
+  messagesSent        Message[] @relation("sentMessages")
+  messagesReceived    Message[] @relation("receivedMessages")
+  caregiver           Caregiver? @relation("UserCaregiver")
+  caseManager         CaseManager? @relation("UserCaseManager")
+  familyMember        FamilyMember?
+  auditLogs           AuditLog[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  lastLogin           DateTime? // [NUEVO] Último inicio de sesión
+  tokenVersion        Int       @default(0) // [NUEVO] Para invalidar tokens JWT
+}
+
+model Participant {
+  id              Int       @id @default(autoincrement())
+  name            String    @unique
+  gender          String
+  medicaidId      String
+  dob             DateTime
+  location        String
+  community       String
+  address         String
+  geoLocation     Point?    // Coordenadas (lat, lon) para geospatial
+  primaryPhone    String
+  secondaryPhone  String?
+  isActive        Boolean
+  locStartDate    DateTime
+  locEndDate      DateTime?
+  pocStartDate    DateTime
+  pocEndDate      DateTime?
+  units           Int
+  hours           Float
+  hdm             Boolean   // Home Delivered Meals
+  adhc            Boolean   // Adult Day Health Care
+  caregivers      ParticipantsOnCaregivers[]
+  caseManager     CaseManager @relation(fields: [cmID], references: [id])
+  cmID            Int
+  medicalHistory  MedicalHistory[]
+  schedules       Schedule[]
+  compliance      ComplianceRecord[]
+  invoices        Invoice[]
+  familyMembers   FamilyMember[]
+  incidents       Incident[]
+  feedback        Feedback[]
+  carePlans       CarePlan[]     // [NUEVO] Planes de cuidado
+  vitalSigns      VitalSigns[]   // [NUEVO] Signos vitales
+  // [NUEVOS CAMPOS MÉDICOS]
+  emergencyContact String?   // Contacto de emergencia
+  allergies        String?   // Lista de alergias
+  bloodType        String?   // Tipo de sangre
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Caregiver {
+  id              Int       @id @default(autoincrement())
+  name            String    @unique
+  email           String?
+  phone           String?
+  isActive        Boolean
+  geoLocation     Point?    // Ubicación actual
+  user            User?     @relation("UserCaregiver", fields: [userId], references: [id])
+  userId          Int?      @unique
+  participants    ParticipantsOnCaregivers[]
+  schedules       Schedule[]
+  incidents       Incident[]
+  feedback        Feedback[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model ParticipantsOnCaregivers {
+  participant     Participant @relation(fields: [participantId], references: [id])
+  participantId   Int
+  caregiver       Caregiver   @relation(fields: [caregiverId], references: [id])
+  caregiverId     Int
+  assignedAt      DateTime    @default(now())
+  assignedBy      String      // "Manual" o "IA"
+  @@id([participantId, caregiverId])
+  @@map("participants_on_caregivers")
+}
+
+model Agency {
+  id              Int         @id @default(autoincrement())
+  name            String      @unique
+  caseManagers    CaseManager[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model CaseManager {
+  id              Int         @id @default(autoincrement())
+  name            String      @unique
+  email           String?
+  phone           String?
+  user            User?       @relation("UserCaseManager", fields: [userId], references: [id])
+  userId          Int?        @unique
+  participants    Participant[]
+  agency          Agency      @relation(fields: [agencyId], references: [id])
+  agencyId        Int
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model MedicalHistory {
+  id            Int         @id @default(autoincrement())
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId Int
+  condition     String      // e.g., "Diabetes"
+  medication    String?     // e.g., "Insulina"
+  notes         String?
+  recordedAt    DateTime    @default(now())
+  // [NUEVOS CAMPOS MÉDICOS]
+  diagnosisDate DateTime?   // Fecha de diagnóstico
+  severity      String?     // "leve", "moderado", "grave"
+  prescribedBy  String?     // Médico que lo recetó
+}
+
+model Schedule {
+  id              Int         @id @default(autoincrement())
+  participant     Participant @relation(fields: [participantId], references: [id])
+  participantId   Int
+  caregiver       Caregiver   @relation(fields: [caregiverId], references: [id])
+  caregiverId     Int
+  startTime       DateTime
+  endTime         DateTime
+  status          String      @default("pending")
+  checkInLocation Point?
+  checkOutLocation Point?
+  notes           String?
+  tasks           Task[]
+}
+
+model Task {
+  id            Int         @id @default(autoincrement())
+  schedule      Schedule    @relation(fields: [scheduleId], references: [id])
+  scheduleId    Int
+  description   String
+  status        String      @default("pending")
+  completedAt   DateTime?
+  location      Point?
+  // [NUEVOS CAMPOS MÉDICOS]
+  category      String?     // "medicación", "monitoreo", "asistencia"
+  dosage        String?     // e.g., "10 mg"
+  frequency     String?     // e.g., "diaria", "semanal"
+}
+
+model ComplianceRecord {
+  id            Int         @id @default(autoincrement())
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId Int
+  requirement   String
+  status        String      // pending, completed, overdue
+  dueDate       DateTime
+  completedAt   DateTime?
+  notes         String?
+}
+
+model Invoice {
+  id            Int         @id @default(autoincrement())
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId Int
+  amount        Float
+  status        String      @default("pending")
+  issuedAt      DateTime    @default(now())
+  dueDate       DateTime
+  paidAt        DateTime?
+}
+
+model FamilyMember {
+  id            Int         @id @default(autoincrement())
+  user          User        @relation(fields: [userId], references: [id])
+  userId        Int         @unique
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId Int
+  accessCode    String
+  createdAt     DateTime    @default(now())
+}
+
+model Incident {
+  id            Int         @id @default(autoincrement())
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  participantId Int?
+  caregiver     Caregiver?  @relation(fields: [caregiverId], references: [id])
+  caregiverId   Int?
+  description   String
+  severity      String      // low, medium, high
+  reportedAt    DateTime    @default(now())
+  resolvedAt    DateTime?
+  resolution    String?
+}
+
+model Feedback {
+  id            Int         @id @default(autoincrement())
+  participantId Int?
+  caregiverId   Int?
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  caregiver     Caregiver?  @relation(fields: [caregiverId], references: [id])
+  rating        Int
+  comment       String?
+  submittedAt   DateTime    @default(now())
+}
+
+model Message {
+  id            Int       @id @default(autoincrement())
+  sender        User      @relation("sentMessages", fields: [senderId], references: [id])
+  senderId      Int
+  receiver      User      @relation("receivedMessages", fields: [receiverId], references: [id])
+  receiverId    Int
+  content       String
+  sentAt        DateTime  @default(now())
+  readAt        DateTime?
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  action    String
+  entityId  Int?
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+model CarePlan {
+  id            Int         @id @default(autoincrement())
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId Int
+  title         String      // e.g., "Plan para Diabetes Tipo 2"
+  description   String?
+  startDate     DateTime
+  endDate       DateTime?
+  createdBy     String      // e.g., Nombre del CaseManager o "IA"
+  tasks         CarePlanTask[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model CarePlanTask {
+  id            Int       @id @default(autoincrement())
+  carePlan      CarePlan  @relation(fields: [carePlanId], references: [id])
+  carePlanId    Int
+  description   String    // e.g., "Medir glucosa"
+  frequency     String    // e.g., "diaria"
+  priority      String    // "alta", "media", "baja"
+  assignedTo    String?   // e.g., "Caregiver ID" o "auto"
+  completedAt   DateTime?
+}
+
+model VitalSigns {
+  id            Int         @id @default(autoincrement())
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId Int
+  recordedAt    DateTime    @default(now())
+  bloodPressure String?     // e.g., "120/80 mmHg"
+  heartRate     Int?        // Pulsaciones por minuto
+  temperature   Float?      // e.g., 36.6 °C
+  oxygenLevel   Float?      // e.g., 98%
+  notes         String?     // Observaciones
+}
