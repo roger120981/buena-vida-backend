@@ -21,7 +21,28 @@ export class AgencyRepository {
     pagination: PaginationOptions = { page: 1, pageSize: 10 },
     sort: SortOptions = { sortBy: 'createdAt', sortOrder: 'asc' },
   ) {
-    return applyFilters(this.prisma.agency, filters, pagination, sort, ['id', 'name', 'createdAt', 'updatedAt']);
+    // Transformar filtros específicos de Agency
+    const transformedFilters: FilterOptions = {};
+    for (const [key, value] of Object.entries(filters)) {
+      if (Array.isArray(value) && value.length > 0) {
+        // Si el valor es un array (como ["w"]), asumimos una búsqueda parcial
+        transformedFilters[key] = { contains: value[0], mode: 'insensitive' };
+      } else if (typeof value === 'object' && value !== null) {
+        // Si ya es un objeto Prisma válido (como { contains: "w" }), lo usamos directamente
+        transformedFilters[key] = value;
+      } else if (value !== undefined && value !== null) {
+        // Si es un valor simple (como "Health Agency"), asumimos igualdad exacta
+        transformedFilters[key] = value;
+      }
+    }
+
+    return applyFilters(
+      this.prisma.agency,
+      transformedFilters,
+      pagination,
+      sort,
+      ['id', 'name', 'createdAt', 'updatedAt']
+    );
   }
 
   async findOne(id: number): Promise<Agency> {

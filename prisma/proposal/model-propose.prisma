@@ -46,7 +46,7 @@ model Participant {
   location        String
   community       String
   address         String
-  geoLocation     Point?    // Coordenadas (lat, lon) para geospatial
+  geoLocation     Unsupported("\"public\".geography")?    // Coordenadas (lat, lon) para geospatial
   primaryPhone    String
   secondaryPhone  String?
   isActive        Boolean
@@ -84,7 +84,7 @@ model Caregiver {
   email           String?
   phone           String?
   isActive        Boolean
-  geoLocation     Point?    // Ubicación actual
+  geoLocation     Unsupported("\"public\".geography")?   // Ubicación actual
   user            User?     @relation("UserCaregiver", fields: [userId], references: [id])
   userId          Int?      @unique
   participants    ParticipantsOnCaregivers[]
@@ -151,8 +151,8 @@ model Schedule {
   startTime       DateTime
   endTime         DateTime
   status          String      @default("pending")
-  checkInLocation Point?
-  checkOutLocation Point?
+  checkInLocation Unsupported("\"public\".geography")?
+  checkOutLocation Unsupported("\"public\".geography")?
   notes           String?
   tasks           Task[]
 }
@@ -164,7 +164,7 @@ model Task {
   description   String
   status        String      @default("pending")
   completedAt   DateTime?
-  location      Point?
+  location      Unsupported("\"public\".geography")?
   // [NUEVOS CAMPOS MÉDICOS]
   category      String?     // "medicación", "monitoreo", "asistencia"
   dosage        String?     // e.g., "10 mg"
