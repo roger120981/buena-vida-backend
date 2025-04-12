@@ -21,7 +21,22 @@ export class CaseManagerRepository {
     pagination: PaginationOptions = { page: 1, pageSize: 10 },
     sort: SortOptions = { sortBy: 'createdAt', sortOrder: 'asc' },
   ) {
-    return applyFilters(this.prisma.caseManager, filters, pagination, sort, [
+    // Transformar filtros específicos de CaseManager
+    const transformedFilters: FilterOptions = {};
+    for (const [key, value] of Object.entries(filters)) {
+      if (Array.isArray(value) && value.length > 0) {
+        // Si el valor es un array (como ["d"]), asumimos una búsqueda parcial
+        transformedFilters[key] = { contains: value[0], mode: 'insensitive' };
+      } else if (typeof value === 'object' && value !== null) {
+        // Si ya es un objeto Prisma válido (como { contains: "d" }), lo usamos directamente
+        transformedFilters[key] = value;
+      } else if (value !== undefined && value !== null) {
+        // Si es un valor simple (como "John Doe"), asumimos igualdad exacta
+        transformedFilters[key] = value;
+      }
+    }
+
+    return applyFilters(this.prisma.caseManager, transformedFilters, pagination, sort, [
       'id',
       'name',
       'email',
