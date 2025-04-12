@@ -25,7 +25,15 @@ export class CaseManagerRepository {
     const transformedFilters: FilterOptions = {};
     for (const [key, value] of Object.entries(filters)) {
       if (Array.isArray(value) && value.length > 0) {
-        transformedFilters[key] = { contains: value[0], mode: 'insensitive' };
+        if (key === 'agency.name') {
+          // Filtro anidado para agency.name
+          transformedFilters.agency = {
+            name: { contains: value[0], mode: 'insensitive' },
+          };
+        } else {
+          // Filtros directos (como name, email, phone)
+          transformedFilters[key] = { contains: value[0], mode: 'insensitive' };
+        }
       } else if (typeof value === 'object' && value !== null) {
         transformedFilters[key] = value;
       } else if (value !== undefined && value !== null) {
