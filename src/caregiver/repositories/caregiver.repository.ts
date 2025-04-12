@@ -26,19 +26,31 @@ export class CaregiverRepository {
     pagination: PaginationOptions = { page: 1, pageSize: 10 },
     sort: SortOptions = { sortBy: 'createdAt', sortOrder: 'asc' },
   ) {
-    return applyFilters(this.prisma.caregiver, filters, pagination, sort, [
-      'id',
-      'name',
-      'email',
-      'phone',
-      'isActive',
-      'createdAt',
-      'updatedAt',
-    ]);
+    // Transformar filtros específicos de Caregiver
+    const transformedFilters: FilterOptions = {};
+    for (const [key, value] of Object.entries(filters)) {
+      if (Array.isArray(value) && value.length > 0) {
+        transformedFilters[key] = { contains: value[0], mode: 'insensitive' };
+      } else if (typeof value === 'object' && value !== null) {
+        transformedFilters[key] = value;
+      } else if (value !== undefined && value !== null) {
+        transformedFilters[key] = value;
+      }
+    }
+
+    return applyFilters(
+      this.prisma.caregiver,
+      transformedFilters,
+      pagination,
+      sort,
+      ['id', 'name', 'email', 'phone', 'isActive', 'createdAt', 'updatedAt']
+    );
   }
 
   async findOne(id: number): Promise<Caregiver> {
-    const caregiver = await this.prisma.caregiver.findUnique({ where: { id } });
+    const caregiver = await this.prisma.caregiver.findUnique({
+      where: { id },
+    });
     if (!caregiver) throw new Error(`Caregiver with ID ${id} not found`);
     return caregiver;
   }
